@@ -1,4 +1,5 @@
 ﻿# Neo-Bazaar
-Anubhab here
-Ashif arrived
-Shebanti arrived
+Anubhab here<br>
+Ashif arrived<br>
+Shebanti arrived<br>
+Avirup arrived<br>
