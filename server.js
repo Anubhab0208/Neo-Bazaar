@@ -15,21 +15,21 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
-/* Serve frontend */
+/* Serve frontend files from the root directory */
 app.use(express.static(__dirname));
 
 /* =========================
    DATABASE
 ========================= */
 mongoose.connect(process.env.MONGO_URI)
-.then(() => console.log("MongoDB Connected"))
-.catch(err => console.log("DB Error:", err));
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch(err => console.log("❌ DB Error:", err));
 
 /* =========================
    MODELS
 ========================= */
 
-// PRODUCT
+// PRODUCT MODEL
 const productSchema = new mongoose.Schema({
   name: String,
   price: Number,
@@ -39,7 +39,7 @@ const productSchema = new mongoose.Schema({
 
 const Product = mongoose.model("Product", productSchema);
 
-// USER
+// USER MODEL (For regular customers)
 const userSchema = new mongoose.Schema({
   email: { type: String, unique: true },
   password: String
@@ -48,39 +48,64 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model("User", userSchema);
 
 /* =========================
-   ROUTES
+   PAGE ROUTES
 ========================= */
 
-// HOME
+// Home/Login Page
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
+// Admin Dashboard Page
+app.get("/admin-dashboard", (req, res) => {
+  res.sendFile(path.join(__dirname, "admin-dashboard.html"));
+});
+
 /* =========================
-   AUTH
+   AUTHENTICATION API
 ========================= */
 
-// REGISTER
+/**
+ * NEW: ADMIN LOGIN
+ * This route checks credentials against your .env file
+ */
+app.post("/api/admin/login", (req, res) => {
+  const { email, password } = req.body;
+
+  const envAdminEmail = process.env.ADMIN_EMAIL;
+  const envAdminPassword = process.env.ADMIN_PASSWORD;
+
+  if (email === envAdminEmail && password === envAdminPassword) {
+    console.log("Admin logged in successfully");
+    res.json({ 
+      success: true, 
+      message: "Admin Access Granted",
+      redirectUrl: "/admin-dashboard" 
+    });
+  } else {
+    res.status(401).json({ 
+      success: false, 
+      message: "Invalid Admin Credentials" 
+    });
+  }
+});
+
+// REGULAR USER REGISTER
 app.post("/api/register", async (req, res) => {
   try {
     const { email, password } = req.body;
-
     const hashed = await bcrypt.hash(password, 10);
-
     const user = new User({ email, password: hashed });
     await user.save();
-
     res.json({ success: true, message: "User created" });
-
   } catch (err) {
     res.json({ success: false, message: "User exists or error" });
   }
 });
 
-// LOGIN
+// REGULAR USER LOGIN
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
-
   const user = await User.findOne({ email });
 
   if (!user) {
@@ -88,7 +113,6 @@ app.post("/api/login", async (req, res) => {
   }
 
   const match = await bcrypt.compare(password, user.password);
-
   if (!match) {
     return res.json({ success: false, message: "Wrong password" });
   }
@@ -100,7 +124,7 @@ app.post("/api/login", async (req, res) => {
 });
 
 /* =========================
-   PRODUCTS
+   PRODUCTS API
 ========================= */
 
 // GET ALL PRODUCTS
@@ -114,9 +138,7 @@ app.post("/api/products", async (req, res) => {
   try {
     const product = new Product(req.body);
     await product.save();
-
     res.json({ success: true, message: "Product added" });
-
   } catch (err) {
     res.json({ success: false });
   }
@@ -125,9 +147,7 @@ app.post("/api/products", async (req, res) => {
 /* =========================
    SERVER START
 ========================= */
-
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
