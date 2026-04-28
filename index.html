@@ -4,342 +4,136 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Neo-Bazaar — Home</title>
-  <!-- Tailwind Play CDN for quick prototyping -->
+
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    /* Small custom tweaks */
-    :root { --accent: #0b74de; }
-    .glass { background: rgba(255,255,255,0.7); backdrop-filter: blur(6px); }
-  </style>
 </head>
-<body class="bg-gray-50 text-gray-900 antialiased">
 
-  <!-- NAVIGATION -->
-  <header class="sticky top-0 z-40 glass border-b border-gray-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16">
-        <div class="flex items-center gap-4">
-          <a href="#" class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-600 to-pink-500 flex items-center justify-center text-white font-bold">NB</div>
-            <span class="font-semibold text-lg">Neo-Bazaar</span>
-          </a>
+<body class="bg-gray-50 text-gray-900">
 
-          <nav class="hidden md:flex items-center gap-2" aria-label="Main">
-            <a href="#" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600">Men</a>
-            <a href="#" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600">Women</a>
-            <a href="#" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600">Electronics</a>
-            <a href="#" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600">Home</a>
-          </nav>
-        </div>
+<!-- NAV -->
+<header class="bg-white shadow p-4 flex justify-between items-center">
+  <h1 class="text-xl font-bold">Neo-Bazaar</h1>
 
-        <div class="flex-1 px-4 hidden lg:block">
-          <form id="searchForm" class="max-w-2xl mx-auto" role="search" onsubmit="event.preventDefault(); alert('Search: ' + document.getElementById('q').value)">
-            <div class="relative">
-              <input id="q" name="q" type="search" placeholder="Search products, brands and categories" class="w-full rounded-lg border border-gray-200 bg-white py-2 pl-4 pr-32 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
-              <button type="submit" class="absolute right-1 top-1/2 -translate-y-1/2 bg-indigo-600 text-white px-4 py-1.5 rounded-lg text-sm hover:bg-indigo-700">Search</button>
-            </div>
-          </form>
-        </div>
+  <div>
+    <button id="loginBtn" onclick="openModal()" class="bg-indigo-600 text-white px-4 py-2 rounded">Login</button>
 
-        <div class="flex items-center gap-3">
-          <button class="hidden sm:inline-flex items-center gap-2 text-sm text-gray-700 hover:text-indigo-600" aria-label="Wishlist">♡ Wishlist</button>
-
-          <button class="relative inline-flex items-center gap-2 px-3 py-2 rounded-md bg-white border border-gray-200 hover:shadow-sm" aria-label="Cart">
-            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 7h14l-2-7M10 21a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0z"/></svg>
-            <span class="text-sm font-medium">Cart</span>
-            <span id="cartCount" class="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold bg-red-500 text-white rounded-full">3</span>
-          </button>
-
-          <!-- Auth area -->
-          <div id="authArea" class="relative">
-            <!-- Logged out -->
-            <button id="loginBtn" class="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-indigo-600 text-white text-sm hover:bg-indigo-700" aria-haspopup="dialog">Log in</button>
-
-            <!-- Logged in (hidden by default) -->
-            <button id="profileBtn" class="hidden items-center gap-2 px-3 py-2 rounded-md bg-white border border-gray-200 text-sm" aria-expanded="false" aria-haspopup="true">
-              <span id="avatar" class="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-red-500 text-white flex items-center justify-center font-semibold">A</span>
-              <span id="profileName" class="hidden sm:inline-block font-medium">Alex</span>
-              <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-            </button>
-
-            <!-- Dropdown -->
-            <div id="profileDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-2" role="menu" aria-hidden="true">
-              <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">My Orders</a>
-              <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">Saved Items</a>
-              <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" role="menuitem">Account Settings</a>
-              <button id="logoutBtn" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50" role="menuitem">Log out</button>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <!-- MAIN -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- HERO -->
-    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
-      <div class="lg:col-span-2 bg-white rounded-2xl p-8 shadow">
-        <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight">Neo-Bazaar — Shop smarter, live better</h1>
-        <p class="mt-3 text-gray-600 max-w-2xl">Curated deals across fashion, electronics, home essentials and more. Fast delivery, secure checkout, and easy returns.</p>
-        <div class="mt-6 flex flex-wrap gap-3">
-          <a href="#" class="inline-flex items-center gap-2 px-5 py-3 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700">Shop Now</a>
-          <a href="#" class="inline-flex items-center gap-2 px-5 py-3 bg-white border border-gray-200 rounded-lg hover:shadow">Explore Categories</a>
-        </div>
-
-        <div class="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div class="p-4 bg-gray-50 rounded-lg text-center">
-            <div class="text-2xl font-semibold">Free</div>
-            <div class="text-sm text-gray-500">Shipping over ₹999</div>
-          </div>
-          <div class="p-4 bg-gray-50 rounded-lg text-center">
-            <div class="text-2xl font-semibold">24/7</div>
-            <div class="text-sm text-gray-500">Customer support</div>
-          </div>
-          <div class="p-4 bg-gray-50 rounded-lg text-center">
-            <div class="text-2xl font-semibold">Easy</div>
-            <div class="text-sm text-gray-500">Returns & refunds</div>
-          </div>
-          <div class="p-4 bg-gray-50 rounded-lg text-center">
-            <div class="text-2xl font-semibold">Secure</div>
-            <div class="text-sm text-gray-500">Payments</div>
-          </div>
-        </div>
-      </div>
-
-      <aside class="bg-white rounded-2xl p-6 shadow">
-        <h3 class="text-lg font-semibold">Limited time offers</h3>
-        <ul class="mt-4 space-y-3 text-sm text-gray-600">
-          <li>Up to 50% off on selected electronics</li>
-          <li>Buy 1 Get 1 on select fashion</li>
-          <li>Extra 10% off with code <strong>NEO10</strong></li>
-        </ul>
-        <a href="#" class="mt-6 inline-block text-sm text-indigo-600 hover:underline">View all offers →</a>
-      </aside>
-    </section>
-
-    <!-- CATEGORIES -->
-    <section class="mt-10">
-      <h2 class="text-xl font-semibold">Shop by category</h2>
-      <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-4">
-        <a href="#" class="flex flex-col items-center gap-2 p-4 bg-white rounded-lg shadow-sm hover:shadow">
-          <div class="w-12 h-12 rounded-md bg-indigo-100 flex items-center justify-center text-indigo-600">👕</div>
-          <span class="text-sm font-medium">Clothing</span>
-        </a>
-        <a href="#" class="flex flex-col items-center gap-2 p-4 bg-white rounded-lg shadow-sm hover:shadow">
-          <div class="w-12 h-12 rounded-md bg-green-100 flex items-center justify-center text-green-600">🏠</div>
-          <span class="text-sm font-medium">Home</span>
-        </a>
-        <a href="#" class="flex flex-col items-center gap-2 p-4 bg-white rounded-lg shadow-sm hover:shadow">
-          <div class="w-12 h-12 rounded-md bg-yellow-100 flex items-center justify-center text-yellow-600">🎧</div>
-          <span class="text-sm font-medium">Electronics</span>
-        </a>
-        <a href="#" class="flex flex-col items-center gap-2 p-4 bg-white rounded-lg shadow-sm hover:shadow">
-          <div class="w-12 h-12 rounded-md bg-pink-100 flex items-center justify-center text-pink-600">💄</div>
-          <span class="text-sm font-medium">Beauty</span>
-        </a>
-        <a href="#" class="flex flex-col items-center gap-2 p-4 bg-white rounded-lg shadow-sm hover:shadow">
-          <div class="w-12 h-12 rounded-md bg-teal-100 flex items-center justify-center text-teal-600">👟</div>
-          <span class="text-sm font-medium">Footwear</span>
-        </a>
-        <a href="#" class="flex flex-col items-center gap-2 p-4 bg-white rounded-lg shadow-sm hover:shadow">
-          <div class="w-12 h-12 rounded-md bg-purple-100 flex items-center justify-center text-purple-600">🎮</div>
-          <span class="text-sm font-medium">Gaming</span>
-        </a>
-      </div>
-    </section>
-
-    <!-- PRODUCTS GRID -->
-    <section class="mt-10">
-      <div class="flex items-center justify-between">
-        <h2 class="text-xl font-semibold">Featured for you</h2>
-        <a href="#" class="text-sm text-indigo-600 hover:underline">View all</a>
-      </div>
-
-      <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        <!-- Product card -->
-        <article class="bg-white rounded-xl shadow-sm overflow-hidden group">
-          <div class="aspect-w-4 aspect-h-3 bg-gray-100 flex items-center justify-center text-gray-400">Image</div>
-          <div class="p-4">
-            <h3 class="font-medium text-gray-800">Wireless Headphones</h3>
-            <p class="text-sm text-gray-500 mt-1">BrandName</p>
-            <div class="mt-3 flex items-center justify-between">
-              <div class="text-lg font-semibold text-indigo-600">₹2,499</div>
-              <button class="px-3 py-1.5 bg-white border border-gray-200 rounded-md text-sm hover:bg-indigo-50" onclick="addToCart()">Add</button>
-            </div>
-          </div>
-        </article>
-
-        <article class="bg-white rounded-xl shadow-sm overflow-hidden group">
-          <div class="aspect-w-4 aspect-h-3 bg-gray-100 flex items-center justify-center text-gray-400">Image</div>
-          <div class="p-4">
-            <h3 class="font-medium text-gray-800">Running Shoes</h3>
-            <p class="text-sm text-gray-500 mt-1">SportCo</p>
-            <div class="mt-3 flex items-center justify-between">
-              <div class="text-lg font-semibold text-indigo-600">₹3,199</div>
-              <button class="px-3 py-1.5 bg-white border border-gray-200 rounded-md text-sm hover:bg-indigo-50" onclick="addToCart()">Add</button>
-            </div>
-          </div>
-        </article>
-
-        <article class="bg-white rounded-xl shadow-sm overflow-hidden group">
-          <div class="aspect-w-4 aspect-h-3 bg-gray-100 flex items-center justify-center text-gray-400">Image</div>
-          <div class="p-4">
-            <h3 class="font-medium text-gray-800">Smart Watch</h3>
-            <p class="text-sm text-gray-500 mt-1">GadgetPro</p>
-            <div class="mt-3 flex items-center justify-between">
-              <div class="text-lg font-semibold text-indigo-600">₹4,999</div>
-              <button class="px-3 py-1.5 bg-white border border-gray-200 rounded-md text-sm hover:bg-indigo-50" onclick="addToCart()">Add</button>
-            </div>
-          </div>
-        </article>
-
-        <article class="bg-white rounded-xl shadow-sm overflow-hidden group">
-          <div class="aspect-w-4 aspect-h-3 bg-gray-100 flex items-center justify-center text-gray-400">Image</div>
-          <div class="p-4">
-            <h3 class="font-medium text-gray-800">Classic Sunglasses</h3>
-            <p class="text-sm text-gray-500 mt-1">SunCo</p>
-            <div class="mt-3 flex items-center justify-between">
-              <div class="text-lg font-semibold text-indigo-600">₹899</div>
-              <button class="px-3 py-1.5 bg-white border border-gray-200 rounded-md text-sm hover:bg-indigo-50" onclick="addToCart()">Add</button>
-            </div>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <!-- NEWSLETTER -->
-    <section class="mt-12 bg-indigo-600 rounded-2xl p-8 text-white">
-      <div class="max-w-3xl">
-        <h3 class="text-2xl font-semibold">Get exclusive deals</h3>
-        <p class="mt-2 text-indigo-100">Subscribe to the Neo-Bazaar newsletter for early access to sales and special offers.</p>
-        <form class="mt-4 sm:flex sm:gap-3" onsubmit="event.preventDefault(); alert('Subscribed: ' + document.getElementById('emailSub').value)">
-          <input id="emailSub" type="email" required placeholder="Your email address" class="w-full sm:flex-1 rounded-lg px-4 py-2 text-gray-800" />
-          <button type="submit" class="mt-3 sm:mt-0 inline-flex items-center gap-2 px-5 py-2 bg-white text-indigo-600 rounded-lg font-medium hover:opacity-95">Subscribe</button>
-        </form>
-      </div>
-    </section>
-  </main>
-
-  <!-- FOOTER -->
-  <footer class="bg-white border-t border-gray-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-600 to-pink-500 flex items-center justify-center text-white font-bold">NB</div>
-          <div>
-            <div class="font-semibold">Neo-Bazaar</div>
-            <div class="text-sm text-gray-500">© Neo-Bazaar 2026</div>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-6 text-sm text-gray-600">
-          <a href="#" class="hover:underline">Help Center</a>
-          <a href="#" class="hover:underline">Terms</a>
-          <a href="#" class="hover:underline">Privacy</a>
-        </div>
-      </div>
-    </div>
-  </footer>
-
-  <!-- LOGIN MODAL -->
-  <div id="modalBackdrop" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50" aria-hidden="true">
-    <div class="bg-white rounded-xl w-full max-w-md p-6 shadow-lg" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
-      <h2 id="loginTitle" class="text-xl font-semibold">Sign in to Neo-Bazaar</h2>
-      <form id="loginForm" class="mt-4" onsubmit="event.preventDefault(); demoLogin()">
-        <label class="block text-sm text-gray-700">Email</label>
-        <input id="email" type="email" required class="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-300" />
-        <label class="block text-sm text-gray-700 mt-3">Password</label>
-        <input id="password" type="password" required class="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-300" />
-        <div class="mt-4 flex items-center justify-between gap-3">
-          <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md">Sign in</button>
-          <button type="button" class="px-4 py-2 rounded-md border border-gray-200 bg-white" onclick="closeModal()">Cancel</button>
-        </div>
-      </form>
-      <p class="mt-4 text-sm text-gray-600">New to Neo-Bazaar? <a href="#" class="text-indigo-600 hover:underline">Create an account</a></p>
+    <div id="profileArea" class="hidden">
+      <span id="profileName"></span>
+      <button onclick="logout()">Logout</button>
     </div>
   </div>
+</header>
 
-  <script>
-    // Demo client-side auth & cart interactions (no backend)
-    const loginBtn = document.getElementById('loginBtn');
-    const modalBackdrop = document.getElementById('modalBackdrop');
-    const profileBtn = document.getElementById('profileBtn');
-    const profileDropdown = document.getElementById('profileDropdown');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const avatar = document.getElementById('avatar');
-    const profileName = document.getElementById('profileName');
-    const cartCount = document.getElementById('cartCount');
+<!-- PRODUCTS -->
+<main class="p-6">
+  <h2 class="text-xl font-semibold mb-4">Products</h2>
 
-    loginBtn?.addEventListener('click', openModal);
-    profileBtn?.addEventListener('click', toggleDropdown);
-    logoutBtn?.addEventListener('click', demoLogout);
+  <div id="productContainer" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- Dynamic products will load here -->
+  </div>
+</main>
 
-    document.addEventListener('click', (e) => {
-      if (profileBtn && !profileBtn.contains(e.target) && profileDropdown && !profileDropdown.contains(e.target)) {
-        profileDropdown.classList.add('hidden');
-        profileBtn.setAttribute('aria-expanded','false');
-        profileDropdown.setAttribute('aria-hidden','true');
-      }
+<!-- LOGIN MODAL -->
+<div id="modal" class="hidden fixed inset-0 bg-black/50 flex justify-center items-center">
+  <div class="bg-white p-6 rounded w-80">
+    <h2 class="text-lg font-bold mb-3">Login</h2>
+
+    <input id="email" type="email" placeholder="Email" class="border w-full p-2 mb-2">
+    <input id="password" type="password" placeholder="Password" class="border w-full p-2 mb-3">
+
+    <button onclick="login()" class="bg-indigo-600 text-white px-4 py-2 w-full">Login</button>
+    <button onclick="closeModal()" class="mt-2 w-full">Cancel</button>
+  </div>
+</div>
+
+<script>
+
+/* =========================
+   PRODUCT LOAD
+========================= */
+async function loadProducts() {
+  try {
+    const res = await fetch("/api/products");
+    const products = await res.json();
+
+    const container = document.getElementById("productContainer");
+    container.innerHTML = "";
+
+    products.forEach(p => {
+      container.innerHTML += `
+        <div class="bg-white p-4 rounded shadow">
+          <img src="${p.image}" class="h-40 w-full object-cover mb-2"/>
+          <h3 class="font-semibold">${p.name}</h3>
+          <p class="text-gray-500">${p.brand}</p>
+          <div class="flex justify-between mt-2">
+            <span class="text-indigo-600 font-bold">₹${p.price}</span>
+            <button onclick="addToCart()" class="border px-2 py-1 rounded">Add</button>
+          </div>
+        </div>
+      `;
     });
 
-    function openModal(){
-      modalBackdrop.classList.remove('hidden');
-      modalBackdrop.setAttribute('aria-hidden','false');
-      document.getElementById('email').focus();
-    }
-    function closeModal(){
-      modalBackdrop.classList.add('hidden');
-      modalBackdrop.setAttribute('aria-hidden','true');
-    }
+  } catch (err) {
+    console.error(err);
+  }
+}
 
-    function demoLogin(){
-      const email = document.getElementById('email').value || 'alex@example.com';
-      const name = email.split('@')[0].replace(/[^\w]/g,'');
-      const display = name.charAt(0).toUpperCase() + name.slice(1);
-      profileName.textContent = display;
-      avatar.textContent = display.charAt(0);
-      // Toggle UI
-      loginBtn.classList.add('hidden');
-      profileBtn.classList.remove('hidden');
-      closeModal();
-    }
+/* =========================
+   LOGIN SYSTEM
+========================= */
+function openModal(){
+  document.getElementById("modal").classList.remove("hidden");
+}
 
-    function demoLogout(){
-      loginBtn.classList.remove('hidden');
-      profileBtn.classList.add('hidden');
-      profileDropdown.classList.add('hidden');
-    }
+function closeModal(){
+  document.getElementById("modal").classList.add("hidden");
+}
 
-    function toggleDropdown(){
-      const isHidden = profileDropdown.classList.contains('hidden');
-      if (isHidden) {
-        profileDropdown.classList.remove('hidden');
-        profileBtn.setAttribute('aria-expanded','true');
-        profileDropdown.setAttribute('aria-hidden','false');
-      } else {
-        profileDropdown.classList.add('hidden');
-        profileBtn.setAttribute('aria-expanded','false');
-        profileDropdown.setAttribute('aria-hidden','true');
-      }
-    }
+async function login(){
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
-    // Simple cart demo
-    function addToCart(){
-      const current = parseInt(cartCount.textContent || '0', 10);
-      cartCount.textContent = current + 1;
-      cartCount.classList.add('animate-pulse');
-      setTimeout(()=>cartCount.classList.remove('animate-pulse'), 400);
-    }
+  const res = await fetch("/api/login", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ email, password })
+  });
 
-    // Accessibility: close modal with Escape
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        closeModal();
-        if (profileDropdown) profileDropdown.classList.add('hidden');
-      }
-    });
-  </script>
+  const data = await res.json();
+
+  if(data.success){
+    document.getElementById("loginBtn").classList.add("hidden");
+    document.getElementById("profileArea").classList.remove("hidden");
+    document.getElementById("profileName").innerText = email;
+
+    closeModal();
+  } else {
+    alert("Invalid credentials");
+  }
+}
+
+function logout(){
+  document.getElementById("loginBtn").classList.remove("hidden");
+  document.getElementById("profileArea").classList.add("hidden");
+}
+
+/* =========================
+   CART (simple)
+========================= */
+let cart = 0;
+function addToCart(){
+  cart++;
+  alert("Cart items: " + cart);
+}
+
+/* =========================
+   INIT
+========================= */
+loadProducts();
+
+</script>
+
 </body>
 </html>
