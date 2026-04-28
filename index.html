@@ -14,13 +14,17 @@
 <header class="bg-white shadow p-4 flex justify-between items-center">
   <h1 class="text-xl font-bold">Neo-Bazaar</h1>
 
-  <div>
-    <button id="loginBtn" onclick="openModal()" class="bg-indigo-600 text-white px-4 py-2 rounded">Login</button>
+  <div class="flex items-center gap-4">
 
-    <div id="profileArea" class="hidden">
+    <button id="loginBtn" class="bg-indigo-600 text-white px-4 py-2 rounded">
+      Login
+    </button>
+
+    <div id="profileArea" class="hidden flex items-center gap-3">
       <span id="profileName"></span>
-      <button onclick="logout()">Logout</button>
+      <button id="logoutBtn" class="text-red-500">Logout</button>
     </div>
+
   </div>
 </header>
 
@@ -29,111 +33,36 @@
   <h2 class="text-xl font-semibold mb-4">Products</h2>
 
   <div id="productContainer" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <!-- Dynamic products will load here -->
+    <!-- products load dynamically -->
   </div>
 </main>
 
 <!-- LOGIN MODAL -->
 <div id="modal" class="hidden fixed inset-0 bg-black/50 flex justify-center items-center">
   <div class="bg-white p-6 rounded w-80">
+
     <h2 class="text-lg font-bold mb-3">Login</h2>
 
-    <input id="email" type="email" placeholder="Email" class="border w-full p-2 mb-2">
-    <input id="password" type="password" placeholder="Password" class="border w-full p-2 mb-3">
+    <input id="email" type="email" placeholder="Email"
+      class="border w-full p-2 mb-2">
 
-    <button onclick="login()" class="bg-indigo-600 text-white px-4 py-2 w-full">Login</button>
-    <button onclick="closeModal()" class="mt-2 w-full">Cancel</button>
+    <input id="password" type="password" placeholder="Password"
+      class="border w-full p-2 mb-3">
+
+    <button id="loginSubmit"
+      class="bg-indigo-600 text-white px-4 py-2 w-full">
+      Login
+    </button>
+
+    <button id="closeModal" class="mt-2 w-full border p-2">
+      Cancel
+    </button>
+
   </div>
 </div>
 
-<script>
-
-/* =========================
-   PRODUCT LOAD
-========================= */
-async function loadProducts() {
-  try {
-    const res = await fetch("/api/products");
-    const products = await res.json();
-
-    const container = document.getElementById("productContainer");
-    container.innerHTML = "";
-
-    products.forEach(p => {
-      container.innerHTML += `
-        <div class="bg-white p-4 rounded shadow">
-          <img src="${p.image}" class="h-40 w-full object-cover mb-2"/>
-          <h3 class="font-semibold">${p.name}</h3>
-          <p class="text-gray-500">${p.brand}</p>
-          <div class="flex justify-between mt-2">
-            <span class="text-indigo-600 font-bold">₹${p.price}</span>
-            <button onclick="addToCart()" class="border px-2 py-1 rounded">Add</button>
-          </div>
-        </div>
-      `;
-    });
-
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-/* =========================
-   LOGIN SYSTEM
-========================= */
-function openModal(){
-  document.getElementById("modal").classList.remove("hidden");
-}
-
-function closeModal(){
-  document.getElementById("modal").classList.add("hidden");
-}
-
-async function login(){
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-
-  const res = await fetch("/api/login", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ email, password })
-  });
-
-  const data = await res.json();
-
-  if(data.success){
-    document.getElementById("loginBtn").classList.add("hidden");
-    document.getElementById("profileArea").classList.remove("hidden");
-    document.getElementById("profileName").innerText = email;
-
-    closeModal();
-  } else {
-    alert("Invalid credentials");
-  }
-}
-
-function logout(){
-  document.getElementById("loginBtn").classList.remove("hidden");
-  document.getElementById("profileArea").classList.add("hidden");
-}
-
-/* =========================
-   CART (simple)
-========================= */
-let cart = 0;
-function addToCart(){
-  cart++;
-  alert("Cart items: " + cart);
-}
-
-/* =========================
-   INIT
-========================= */
-loadProducts();
-
-</script>
+<!-- EXTERNAL JS ONLY -->
+<script src="/assets/js/app.js"></script>
 
 </body>
 </html>
