@@ -6,6 +6,8 @@ const path = require("path");
 const bcrypt = require("bcrypt");
 const cors = require("cors");
 const multer = require("multer");
+const fs = require("fs");
+const https = require("https");
 
 const app = express();
 
@@ -15,6 +17,12 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
+
+// Log all requests for debugging (BEFORE static middleware)
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
 
 /* Serve frontend */
 app.use(express.static(__dirname));
@@ -100,6 +108,9 @@ const adminAuth = (req, res, next) => {
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
+app.get("/admin", (req, res) => {
+  res.sendFile(path.join(__dirname, "pages", "admin.html"));
+});
 
 /* =========================
    AUTH
@@ -182,6 +193,40 @@ app.post("/api/admin/register", async (req, res) => {
 });
 
 // ADMIN LOGIN
+app.post("/api/admin/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const admin = await Admin.findOne({ email });
+
+    if (!admin) {
+      return res.json({
+        success: false,
+        message: "Admin not found"
+      });
+    }
+
+    const match = await bcrypt.compare(password, admin.password);
+
+    if (!match) {
+      return res.json({
+        success: false,
+        message: "Wrong password"
+      });
+    }
+
+    res.json({
+      success: true,
+      admin: { email: admin.email }
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Login failed"
+    });
+  }
+});
 
 /* =========================
    PRODUCTS
@@ -194,35 +239,31 @@ app.get("/api/products", async (req, res) => {
 });
 
 // ADMIN ADD PRODUCT
-app.post(
-  "/api/products",
-  upload.single("image"),
-  async(req,res)=>{
-    try{
-      const {name,brand,price} = req.body;
+app.post("/api/products", async(req,res)=>{
+  console.log("POST /api/products received");
+  console.log("Body:", req.body);
+  try{
+    const {name,brand,price,image} = req.body;
 
-      let image = req.body.image || "";
-
-      if(req.file){
-        image = "/uploads/" + req.file.filename;
-      }
-
-      if(!name || !brand || !price || !image){
-        return res.status(400).json({success:false});
-      }
-
-      await Product.create({
-        name,
-        brand,
-        price:Number(price),
-        image
-      });
-
-      res.json({success:true});
-
-    }catch(err){
-      res.status(500).json({success:false});
+    if(!name || !brand || !price || !image){
+      console.log("Missing fields - name:", name, "brand:", brand, "price:", price, "image:", image);
+      return res.status(400).json({success:false, message: "Missing required fields"});
     }
+
+    const product = await Product.create({
+      name,
+      brand,
+      price:Number(price),
+      image
+    });
+    
+    console.log("Product created:", product._id);
+    res.json({success:true});
+
+  }catch(err){
+    console.error("Add product error:", err);
+    res.status(500).json({success:false, message: "Server error"});
+  }
 });
 
 // ADMIN DELETE PRODUCT
@@ -264,6 +305,107 @@ app.post("/api/complaints", async(req,res)=>{
     res.status(500).json({success:false});
   }
 });
+// Resolve complaint
+app.put("/api/complaints/:id/resolve", async (req, res) => {
+  try {
+    await Complaint.findByIdAndUpdate(req.params.id, {
+      resolved: true
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+});
+
+// Delete complaint
+app.delete("/api/complaints/:id", async (req, res) => {
+  try {
+    await Complaint.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+});
+/* =========================
+   GOOGLE DRIVE
+========================= */
+
+// Get Google Drive configuration
+app.get("/api/drive-config", (req, res) => {
+  res.json({
+    accessToken: process.env.GOOGLE_DRIVE_TOKEN || "",
+    message: process.env.GOOGLE_DRIVE_TOKEN ? "Ready" : "Google Drive not configured"
+  });
+});
+
+// Download file from Google Drive and save locally
+app.post("/api/drive-upload", async (req, res) => {
+  try {
+    const { fileId, fileName } = req.body;
+
+    if (!fileId || !fileName) {
+      return res.status(400).json({ success: false, message: "Missing fileId or fileName" });
+    }
+
+    const driveToken = process.env.GOOGLE_DRIVE_TOKEN;
+    if (!driveToken) {
+      return res.status(400).json({ success: false, message: "Google Drive not configured" });
+    }
+
+    // Download file from Google Drive
+    const driveUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&access_token=${driveToken}`;
+    
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(fileName) || '.jpg';
+    const localFileName = uniqueSuffix + ext;
+    const filePath = path.join('uploads', localFileName);
+
+    // Ensure uploads directory exists
+    if (!fs.existsSync('uploads')) {
+      fs.mkdirSync('uploads', { recursive: true });
+    }
+
+    // Download and save the file
+    const file = fs.createWriteStream(filePath);
+    
+    https.get(driveUrl, (response) => {
+      if (response.statusCode !== 200) {
+        fs.unlink(filePath, () => {}); // Delete empty file
+        return res.status(400).json({ success: false, message: "Failed to download from Google Drive" });
+      }
+
+      response.pipe(file);
+
+      file.on('finish', () => {
+        file.close();
+        const imageUrl = `/uploads/${localFileName}`;
+        res.json({ success: true, imageUrl });
+      });
+
+      file.on('error', (err) => {
+        file.close();
+        fs.unlink(filePath, () => {}); // Delete file on error
+        res.status(500).json({ success: false, message: "File download error" });
+      });
+    }).on('error', (err) => {
+      fs.unlink(filePath, () => {}); // Delete file on error
+      res.status(500).json({ success: false, message: "Network error" });
+    });
+
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+/* =========================
+   ERROR HANDLER
+========================= */
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ success: false, message: 'Server error' });
+});
+
 /* =========================
    SERVER START
 ========================= */
