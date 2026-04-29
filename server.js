@@ -18,9 +18,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
-<<<<<<< HEAD
-/* Serve frontend files from the root directory */
-=======
 // Log all requests for debugging (BEFORE static middleware)
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
@@ -28,12 +25,11 @@ app.use((req, res, next) => {
 });
 
 /* Serve frontend */
->>>>>>> d0a4716c84312a186efa1ca62aaf51601300a205
 app.use(express.static(__dirname));
 app.use('/uploads', express.static('uploads'));
 
 /* =========================
-   FILE UPLOAD SETUP
+   FILE UPLOAD
 ========================= */
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -47,17 +43,17 @@ const storage = multer.diskStorage({
 const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB limit
 
 /* =========================
-   DATABASE CONNECTION
+   DATABASE
 ========================= */
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => console.log("❌ DB Error:", err));
+.then(() => console.log("MongoDB Connected"))
+.catch(err => console.log("DB Error:", err));
 
 /* =========================
    MODELS
 ========================= */
 
-// PRODUCT MODEL
+// PRODUCT
 const productSchema = new mongoose.Schema({
   name: String,
   price: Number,
@@ -67,7 +63,7 @@ const productSchema = new mongoose.Schema({
 
 const Product = mongoose.model("Product", productSchema);
 
-// USER MODEL (For regular customers)
+// USER
 const userSchema = new mongoose.Schema({
   email: { type: String, unique: true },
   password: String
@@ -75,7 +71,7 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", userSchema);
 
-// ADMIN MODEL
+// ADMIN
 const adminSchema = new mongoose.Schema({
   email: { type: String, unique: true },
   password: String
@@ -83,7 +79,7 @@ const adminSchema = new mongoose.Schema({
 
 const Admin = mongoose.model("Admin", adminSchema);
 
-// COMPLAINT MODEL
+// COMPLAINT
 const complaintSchema = new mongoose.Schema({
   email: String,
   message: String
@@ -92,10 +88,23 @@ const complaintSchema = new mongoose.Schema({
 const Complaint = mongoose.model("Complaint", complaintSchema);
 
 /* =========================
-   PAGE ROUTES
+   MIDDLEWARE
 ========================= */
 
-// Home/Login Page
+// Admin authentication middleware
+const adminAuth = (req, res, next) => {
+  const adminKey = req.headers['admin-key'] || req.body.adminKey;
+  if (adminKey !== process.env.ADMIN_KEY) {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+  next();
+};
+
+/* =========================
+   ROUTES
+========================= */
+
+// HOME
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
@@ -103,53 +112,31 @@ app.get("/admin", (req, res) => {
   res.sendFile(path.join(__dirname, "pages", "admin.html"));
 });
 
-// Admin Dashboard Page
-app.get("/admin-dashboard", (req, res) => {
-  res.sendFile(path.join(__dirname, "admin-dashboard.html"));
-});
-
 /* =========================
-   AUTHENTICATION API
+   AUTH
 ========================= */
 
-// ADMIN LOGIN (Using .env credentials)
-app.post("/api/admin/login", (req, res) => {
-  const { email, password } = req.body;
-
-  const envAdminEmail = process.env.ADMIN_EMAIL;
-  const envAdminPassword = process.env.ADMIN_PASSWORD;
-
-  if (email === envAdminEmail && password === envAdminPassword) {
-    console.log("Admin logged in successfully");
-    res.json({ 
-      success: true, 
-      message: "Admin Access Granted",
-      redirectUrl: "/admin-dashboard" 
-    });
-  } else {
-    res.status(401).json({ 
-      success: false, 
-      message: "Invalid Admin Credentials" 
-    });
-  }
-});
-
-// REGULAR USER REGISTER
+// REGISTER
 app.post("/api/register", async (req, res) => {
   try {
     const { email, password } = req.body;
+
     const hashed = await bcrypt.hash(password, 10);
+
     const user = new User({ email, password: hashed });
     await user.save();
+
     res.json({ success: true, message: "User created" });
+
   } catch (err) {
     res.json({ success: false, message: "User exists or error" });
   }
 });
 
-// REGULAR USER LOGIN
+// LOGIN
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
+
   const user = await User.findOne({ email });
 
   if (!user) {
@@ -157,6 +144,7 @@ app.post("/api/login", async (req, res) => {
   }
 
   const match = await bcrypt.compare(password, user.password);
+
   if (!match) {
     return res.json({ success: false, message: "Wrong password" });
   }
@@ -166,8 +154,6 @@ app.post("/api/login", async (req, res) => {
     user: { email: user.email }
   });
 });
-<<<<<<< HEAD
-=======
 /* =========================
    ADMIN AUTH
 ========================= */
@@ -241,20 +227,13 @@ app.post("/api/admin/login", async (req, res) => {
     });
   }
 });
->>>>>>> d0a4716c84312a186efa1ca62aaf51601300a205
 
 /* =========================
-   PRODUCTS API
+   PRODUCTS
 ========================= */
 
 // GET ALL PRODUCTS
 app.get("/api/products", async (req, res) => {
-<<<<<<< HEAD
-  try {
-    const products = await Product.find();
-    res.json(products);
-  } catch (err) {
-=======
   const products = await Product.find();
   res.json(products);
 });
@@ -305,45 +284,27 @@ app.get("/api/complaints", async(req,res)=>{
     const data = await Complaint.find().sort({createdAt:-1});
     res.json(data);
   }catch{
->>>>>>> d0a4716c84312a186efa1ca62aaf51601300a205
     res.status(500).json([]);
   }
 });
 
-// ADMIN ADD PRODUCT (Supports File Upload or URL)
-app.post("/api/products", upload.single("image"), async (req, res) => {
-  try {
-    const { name, brand, price } = req.body;
-    let image = req.body.image || "";
 
-    if (req.file) {
-      image = "/uploads/" + req.file.filename;
+// ADD COMPLAINT
+app.post("/api/complaints", async(req,res)=>{
+  try{
+    const {email,message} = req.body;
+
+    if(!email || !message){
+      return res.status(400).json({success:false});
     }
 
-    if (!name || !brand || !price || !image) {
-      return res.status(400).json({ success: false, message: "All fields are required" });
-    }
+    await Complaint.create({email,message});
 
-    await Product.create({
-      name,
-      brand,
-      price: Number(price),
-      image
-    });
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error("Error adding product:", err);
-    res.status(500).json({ success: false });
+    res.json({success:true});
+  }catch{
+    res.status(500).json({success:false});
   }
 });
-<<<<<<< HEAD
-
-// ADMIN DELETE PRODUCT
-app.delete("/api/products/:id", async (req, res) => {
-  try {
-    await Product.findByIdAndDelete(req.params.id);
-=======
 // Resolve complaint
 app.put("/api/complaints/:id/resolve", async (req, res) => {
   try {
@@ -351,41 +312,12 @@ app.put("/api/complaints/:id/resolve", async (req, res) => {
       resolved: true
     });
 
->>>>>>> d0a4716c84312a186efa1ca62aaf51601300a205
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ success: false });
   }
 });
 
-<<<<<<< HEAD
-/* =========================
-   COMPLAINTS API
-========================= */
-
-// VIEW COMPLAINTS
-app.get("/api/complaints", async (req, res) => {
-  try {
-    const data = await Complaint.find().sort({ createdAt: -1 });
-    res.json(data);
-  } catch (err) {
-    res.status(500).json([]);
-  }
-});
-
-// ADD COMPLAINT
-app.post("/api/complaints", async (req, res) => {
-  try {
-    const { email, message } = req.body;
-    if (!email || !message) {
-      return res.status(400).json({ success: false });
-    }
-    await Complaint.create({ email, message });
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ success: false });
-  }
-=======
 // Delete complaint
 app.delete("/api/complaints/:id", async (req, res) => {
   try {
@@ -472,13 +404,14 @@ app.post("/api/drive-upload", async (req, res) => {
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(500).json({ success: false, message: 'Server error' });
->>>>>>> d0a4716c84312a186efa1ca62aaf51601300a205
 });
 
 /* =========================
    SERVER START
 ========================= */
+
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
