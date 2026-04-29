@@ -197,7 +197,7 @@
       </div>
 
       <!-- CART (single icon) -->
-      <div class="relative group cursor-pointer">
+      <div class="relative group cursor-pointer" onclick="goToCart()">
         <span class="text-xl">🛒</span>
         <span id="cartCount" class="absolute -top-2 -right-2 bg-orange-500 text-[10px] px-1.5 rounded-full">0</span>
         <div class="absolute right-0 mt-2 w-72 glass rounded-xl p-4 hidden group-hover:block z-50">
@@ -515,13 +515,22 @@
     /* ══════════════════════════════════════
        CART STATE
     ══════════════════════════════════════ */
-    let cart = [];
+    let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
     function addToCart(product) {
-      const existing = cart.find(i => i._id === product._id);
-      if (existing) { existing.qty++; } else { cart.push({ ...product, qty: 1 }); }
-      renderCart();
-    }
+        const existing = cart.find(i => i._id === product._id);
+
+        if (existing) {
+          existing.qty++;
+        } else {
+          cart.push({ ...product, qty: 1 });
+        }
+
+        // 🔥 IMPORTANT LINE (YOU ARE MISSING THIS)
+        localStorage.setItem("cart", JSON.stringify(cart));
+
+        renderCart();
+      }
 
     function renderCart() {
       const countEl  = document.getElementById('cartCount');
@@ -738,6 +747,12 @@
     const savedUser = localStorage.getItem('user');
     if (savedUser) updateAccountUI(JSON.parse(savedUser).email);
     loadProducts();
+    renderCart();
+
+    function goToCart() {
+    localStorage.setItem("cart", JSON.stringify(cart));
+    window.location.href = "cart.html";
+  }
   </script>
 </body>
 </html>
