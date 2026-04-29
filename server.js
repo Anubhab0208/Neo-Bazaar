@@ -328,6 +328,37 @@ app.delete("/api/complaints/:id", async (req, res) => {
   }
 });
 /* =========================
+   ORDERS (UPDATED)
+========================= */
+const orderSchema = new mongoose.Schema({
+  user: mongoose.Schema.Types.Mixed,
+  items: mongoose.Schema.Types.Mixed,
+  subtotal: Number,
+  discount: Number,
+  gst: Number,
+  total: Number,
+  paymentMethod: String,
+  status: { type: String, default: "Placed" }
+}, { timestamps: true, strict: false }); // strict: false allows extra fields
+
+const Order = mongoose.model("Order", orderSchema);
+
+app.post("/api/orders", async (req, res) => {
+  console.log("📦 Order Received:", req.body); // Check your terminal for this!
+  try {
+    const order = await Order.create(req.body);
+    console.log("✅ Order Saved ID:", order._id);
+    res.json({ success: true, orderId: order._id });
+  } catch (err) {
+    console.error("❌ MongoDB Save Error:", err);
+    res.status(500).json({ 
+      success: false, 
+      error: "Order failed", 
+      details: err.message 
+    });
+  }
+});
+/* =========================
    GOOGLE DRIVE
 ========================= */
 
