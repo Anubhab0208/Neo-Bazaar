@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 const path = require("path");
 const bcrypt = require("bcrypt");
 const cors = require("cors");
+const multer = require("multer");
 
 const app = express();
 
@@ -17,9 +18,24 @@ app.use(cors());
 
 /* Serve frontend files from the root directory */
 app.use(express.static(__dirname));
+app.use('/uploads', express.static('uploads'));
 
 /* =========================
-   DATABASE
+   FILE UPLOAD SETUP
+========================= */
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } }); // 5MB limit
+
+/* =========================
+   DATABASE CONNECTION
 ========================= */
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
@@ -47,6 +63,22 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", userSchema);
 
+// ADMIN MODEL
+const adminSchema = new mongoose.Schema({
+  email: { type: String, unique: true },
+  password: String
+}, { timestamps: true });
+
+const Admin = mongoose.model("Admin", adminSchema);
+
+// COMPLAINT MODEL
+const complaintSchema = new mongoose.Schema({
+  email: String,
+  message: String
+}, { timestamps: true });
+
+const Complaint = mongoose.model("Complaint", complaintSchema);
+
 /* =========================
    PAGE ROUTES
 ========================= */
@@ -65,10 +97,7 @@ app.get("/admin-dashboard", (req, res) => {
    AUTHENTICATION API
 ========================= */
 
-/**
- * NEW: ADMIN LOGIN
- * This route checks credentials against your .env file
- */
+// ADMIN LOGIN (Using .env credentials)
 app.post("/api/admin/login", (req, res) => {
   const { email, password } = req.body;
 
@@ -129,18 +158,77 @@ app.post("/api/login", async (req, res) => {
 
 // GET ALL PRODUCTS
 app.get("/api/products", async (req, res) => {
-  const products = await Product.find();
-  res.json(products);
+  try {
+    const products = await Product.find();
+    res.json(products);
+  } catch (err) {
+    res.status(500).json([]);
+  }
 });
 
-// ADD PRODUCT
-app.post("/api/products", async (req, res) => {
+// ADMIN ADD PRODUCT (Supports File Upload or URL)
+app.post("/api/products", upload.single("image"), async (req, res) => {
   try {
-    const product = new Product(req.body);
-    await product.save();
-    res.json({ success: true, message: "Product added" });
+    const { name, brand, price } = req.body;
+    let image = req.body.image || "";
+
+    if (req.file) {
+      image = "/uploads/" + req.file.filename;
+    }
+
+    if (!name || !brand || !price || !image) {
+      return res.status(400).json({ success: false, message: "All fields are required" });
+    }
+
+    await Product.create({
+      name,
+      brand,
+      price: Number(price),
+      image
+    });
+
+    res.json({ success: true });
   } catch (err) {
-    res.json({ success: false });
+    console.error("Error adding product:", err);
+    res.status(500).json({ success: false });
+  }
+});
+
+// ADMIN DELETE PRODUCT
+app.delete("/api/products/:id", async (req, res) => {
+  try {
+    await Product.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+});
+
+/* =========================
+   COMPLAINTS API
+========================= */
+
+// VIEW COMPLAINTS
+app.get("/api/complaints", async (req, res) => {
+  try {
+    const data = await Complaint.find().sort({ createdAt: -1 });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json([]);
+  }
+});
+
+// ADD COMPLAINT
+app.post("/api/complaints", async (req, res) => {
+  try {
+    const { email, message } = req.body;
+    if (!email || !message) {
+      return res.status(400).json({ success: false });
+    }
+    await Complaint.create({ email, message });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false });
   }
 });
 

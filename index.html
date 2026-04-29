@@ -1,70 +1,54 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Neo-Bazaar — Home</title>
-
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neo-Bazaar — Home</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="assets/css/style.css">
 </head>
+<body class="bg-slate-900 min-h-screen text-white">
 
-<body class="bg-gray-50 text-gray-900">
+    <nav class="p-6 flex justify-between items-center bg-slate-800 shadow-xl">
+        <h1 class="text-2xl font-bold text-indigo-400">Neo-Bazaar</h1>
+        <div id="authButtons">
+            <button id="loginBtn" class="bg-indigo-500 hover:bg-fuchsia-500 px-6 py-2 rounded-lg font-bold transition-all">Login</button>
+        </div>
+    </nav>
 
-<!-- NAV -->
-<header class="bg-white shadow p-4 flex justify-between items-center">
-  <h1 class="text-xl font-bold">Neo-Bazaar</h1>
+    <main class="p-10">
+        <h2 class="text-3xl font-bold mb-8 border-l-4 border-fuchsia-500 pl-4">Products</h2>
+        <div id="productContainer" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <p class="text-gray-400">No products found.</p>
+        </div>
+    </main>
 
-  <div class="flex items-center gap-4">
-
-    <button id="loginBtn" class="bg-indigo-600 text-white px-4 py-2 rounded">
-      Login
-    </button>
-
-    <div id="profileArea" class="hidden flex items-center gap-3">
-      <span id="profileName" class="font-medium"></span>
-      <button id="logoutBtn" class="text-red-500">Logout</button>
+    <div id="loginModal" class="fixed inset-0 bg-black/80 flex items-center justify-center hidden z-50 backdrop-blur-sm">
+        <div class="bg-slate-800 p-8 rounded-2xl shadow-2xl w-96 border border-slate-700">
+            <h2 class="text-3xl font-bold mb-6 text-white border-b-4 border-fuchsia-500 inline-block">Login</h2>
+            
+            <div class="space-y-4">
+                <input type="email" id="loginEmail" placeholder="Email Address" 
+                       class="w-full p-3 bg-slate-900 border-2 border-slate-700 rounded-lg focus:border-indigo-500 outline-none transition-colors text-white">
+                
+                <input type="password" id="loginPassword" placeholder="Password" 
+                       class="w-full p-3 bg-slate-900 border-2 border-slate-700 rounded-lg focus:border-indigo-500 outline-none transition-colors text-white">
+                
+                <button id="loginSubmit" 
+                        class="w-full bg-indigo-500 hover:bg-fuchsia-500 text-white font-bold py-3 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300">
+                    Login
+                </button>
+                
+                <button id="closeModal" 
+                        class="w-full text-gray-400 py-2 hover:text-white transition-colors">
+                    Cancel
+                </button>
+            </div>
+            
+            <p id="loginError" class="text-red-400 mt-4 text-sm hidden text-center font-medium"></p>
+        </div>
     </div>
 
-  </div>
-</header>
-
-<!-- PRODUCTS -->
-<main class="p-6">
-  <h2 class="text-xl font-semibold mb-4">Products</h2>
-
-  <div id="productContainer" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <!-- products load dynamically -->
-  </div>
-</main>
-
-<!-- LOGIN MODAL -->
-<div id="modal" class="hidden fixed inset-0 bg-black/50 flex justify-center items-center">
-  <div class="bg-white p-6 rounded w-80">
-
-    <h2 class="text-lg font-bold mb-3">Login</h2>
-
-    <input id="email" type="email" placeholder="Email"
-      class="border w-full p-2 mb-2" autocomplete="email">
-
-    <input id="password" type="password" placeholder="Password"
-      class="border w-full p-2 mb-3" autocomplete="current-password">
-
-    <button id="loginSubmit"
-      class="bg-indigo-600 text-white px-4 py-2 w-full">
-      Login
-    </button>
-
-    <button id="closeModal" class="mt-2 w-full border p-2">
-      Cancel
-    </button>
-
-    <p id="loginError" class="text-sm text-red-600 mt-3 hidden"></p>
-
-  </div>
-</div>
-
-<!-- EXTERNAL JS ONLY -->
-<script src="/assets/js/app.js"></script>
-
+    <script src="assets/js/app.js"></script>
 </body>
 </html>

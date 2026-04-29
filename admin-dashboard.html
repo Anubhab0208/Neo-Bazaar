@@ -6,21 +6,52 @@
     <title>Neo-Bazaar | Admin Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100">
-    <nav class="bg-indigo-600 p-4 text-white flex justify-between">
-        <h1 class="text-xl font-bold">Admin Panel</h1>
-        <a href="/" class="bg-red-500 px-4 py-2 rounded">Logout</a>
-    </nav>
-    
-    <div class="p-8">
-        <h2 class="text-2xl font-semibold mb-4">Welcome, Admin</h2>
-        <div class="bg-white p-6 rounded shadow-md">
-            <p class="text-gray-600">You are successfully logged in using the credentials from your .env file.</p>
-            <div class="mt-6 flex gap-4">
-                <button class="bg-green-500 text-white px-4 py-2 rounded">Add New Product</button>
-                <button class="bg-blue-500 text-white px-4 py-2 rounded">View Orders</button>
+<body class="bg-slate-900 min-h-screen text-white">
+
+    <header class="bg-indigo-600 p-6 flex justify-between items-center shadow-2xl">
+        <h1 class="text-2xl font-bold">Admin Panel</h1>
+        <button id="logoutBtn" class="bg-fuchsia-500 hover:bg-fuchsia-600 px-4 py-2 rounded-lg font-bold transition-all">Logout</button>
+    </header>
+
+    <main class="p-10">
+        <div class="bg-slate-800 p-8 rounded-2xl shadow-xl border border-slate-700">
+            <h2 class="text-3xl font-bold mb-4">Welcome, Admin</h2>
+            <p class="text-gray-400 mb-8">Management portal for products and orders.</p>
+
+            <div class="flex gap-4">
+                <button id="showAddProduct" class="bg-indigo-500 hover:bg-fuchsia-500 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg">
+                    Add New Product
+                </button>
+                <button id="viewOrdersBtn" class="bg-slate-700 hover:bg-slate-600 text-white px-8 py-3 rounded-xl font-bold transition-all border border-slate-600">
+                    View Orders
+                </button>
             </div>
         </div>
-    </div>
+
+        <div id="addProductForm" class="mt-10 bg-slate-800 p-8 rounded-2xl border border-slate-700 hidden">
+            <h3 class="text-xl font-bold mb-6 text-indigo-400">Product Details</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="text" id="pName" placeholder="Product Name" class="bg-slate-900 border border-slate-700 p-3 rounded-lg outline-none focus:border-fuchsia-500">
+                <input type="number" id="pPrice" placeholder="Price (₹)" class="bg-slate-900 border border-slate-700 p-3 rounded-lg outline-none focus:border-fuchsia-500">
+                <input type="text" id="pBrand" placeholder="Brand" class="bg-slate-900 border border-slate-700 p-3 rounded-lg outline-none focus:border-fuchsia-500">
+                <input type="file" id="pImage" class="bg-slate-900 border border-slate-700 p-2 rounded-lg text-sm text-gray-400">
+            </div>
+            <button id="saveProductBtn" class="mt-6 bg-indigo-500 hover:bg-fuchsia-500 px-10 py-3 rounded-lg font-bold transition-all">
+                Save to Database
+            </button>
+        </div>
+    </main>
+
+    <script src="assets/js/admin.js"></script>
+    <script>
+        // Simple toggle for the form
+        document.getElementById('showAddProduct').addEventListener('click', () => {
+            document.getElementById('addProductForm').classList.toggle('hidden');
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            window.location.href = "/";
+        });
+    </script>
 </body>
 </html>
