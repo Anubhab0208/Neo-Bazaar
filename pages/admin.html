@@ -149,6 +149,9 @@
       <button onclick="switchTab('products')" class="nav-tab active text-sm md:text-base">
         Products
       </button>
+      <button onclick="switchTab('featured')" class="nav-tab text-sm md:text-base">
+        Featured
+      </button>
       <button onclick="switchTab('complaints')" class="nav-tab text-sm md:text-base">
         Complaints
       </button>
@@ -181,6 +184,14 @@
               <input id="prodPrice" type="number" step="0.01" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-green-500" placeholder="999.99">
             </div>
             <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Original Price (₹) <span class="text-gray-500 font-normal">— for discount badge</span></label>
+              <input id="prodOriginalPrice" type="number" step="0.01" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-green-500" placeholder="1999.99 (optional)">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Discount % <span class="text-gray-500 font-normal">— items &gt;50% appear in deals ticker</span></label>
+              <input id="prodDiscount" type="number" min="0" max="100" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-green-500" placeholder="65 (optional)">
+            </div>
+            <div>
               <label class="block text-sm font-medium text-gray-300 mb-2">Image URL</label>
               <input id="prodImage" type="url" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-green-500" placeholder="https://example.com/image.jpg">
             </div>
@@ -195,6 +206,46 @@
         <h2 class="text-2xl font-bold mb-6 text-green-400">Product Inventory</h2>
         <div id="adminProductsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <p class="text-gray-400 col-span-full text-center py-8">Loading products...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEATURED PRODUCTS TAB -->
+  <div id="featured-tab" class="tab-content">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+      <!-- Add Featured Product Form -->
+      <div class="lg:col-span-1">
+        <div class="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700 sticky top-8">
+          <h2 class="text-xl font-bold mb-6 text-violet-400">Add Featured Product</h2>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Product Name</label>
+              <input id="featName" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-violet-500" placeholder="Wireless Headphones">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Brand</label>
+              <input id="featBrand" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-violet-500" placeholder="Brand name">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Price (₹)</label>
+              <input id="featPrice" type="number" step="0.01" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-violet-500" placeholder="999.99">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Image URL</label>
+              <input id="featImage" type="url" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-violet-500" placeholder="https://example.com/image.jpg">
+            </div>
+            <button id="addFeaturedBtn" class="w-full bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-700 hover:to-violet-800 text-white font-bold py-3 rounded-lg transition shadow-lg">
+              Add to Featured
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Featured Products Grid -->
+      <div class="lg:col-span-2">
+        <h2 class="text-2xl font-bold mb-6 text-violet-400">Featured Products</h2>
+        <div id="adminFeaturedGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <p class="text-gray-400 col-span-full text-center py-8">Loading featured products...</p>
         </div>
       </div>
     </div>
@@ -333,11 +384,14 @@ async function loadAdminProducts() {
 }
 
 /* ADD PRODUCT */
-async function addProduct(name, brand, price, image) {
+async function addProduct(name, brand, price, image, originalPrice, discount) {
+  const body = { name, brand, price, image };
+  if (originalPrice) body.originalPrice = originalPrice;
+  if (discount) body.discount = discount;
   const res = await fetch(`${API_BASE}/products`, {
     method: 'POST',
     headers: getAuthHeaders(),
-    body: JSON.stringify({ name, brand, price, image })
+    body: JSON.stringify(body)
   });
   const data = await res.json();
   return data.success;
@@ -498,23 +552,102 @@ document.getElementById('addProductBtn').onclick = async () => {
   const brand = document.getElementById('prodBrand').value.trim();
   const price = parseFloat(document.getElementById('prodPrice').value);
   const image = document.getElementById('prodImage').value.trim();
+  const originalPrice = parseFloat(document.getElementById('prodOriginalPrice').value) || undefined;
+  const discount = parseFloat(document.getElementById('prodDiscount').value) || undefined;
 
   if (!name || !brand || isNaN(price) || !image) {
     alert('Please fill all fields');
     return;
   }
 
-  const ok = await addProduct(name, brand, price, image);
+  const ok = await addProduct(name, brand, price, image, originalPrice, discount);
 
   if (ok) {
     document.getElementById('prodName').value = '';
     document.getElementById('prodBrand').value = '';
     document.getElementById('prodPrice').value = '';
     document.getElementById('prodImage').value = '';
+    document.getElementById('prodOriginalPrice').value = '';
+    document.getElementById('prodDiscount').value = '';
     alert('Product added successfully');
     loadAdminProducts();
   } else {
     alert('Failed to add product');
+  }
+};
+
+/* LOAD FEATURED PRODUCTS */
+async function loadAdminFeatured() {
+  const container = document.getElementById('adminFeaturedGrid');
+  try {
+    const res = await fetch(`${API_BASE}/featured-products`);
+    const products = await res.json();
+
+    if (!products.length) {
+      container.innerHTML = '<p class="text-gray-400 col-span-full text-center py-8">No featured products yet</p>';
+      return;
+    }
+
+    container.innerHTML = products.map(p => `
+      <div class="bg-gray-700 border border-gray-600 rounded-lg p-4 hover:border-violet-500 transition">
+        <div class="w-full h-40 rounded mb-3 bg-gray-800 flex items-center justify-center overflow-hidden">
+          <img src="${p.image || ''}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="hidden w-full h-full flex-col items-center justify-center text-gray-500">
+            <span class="text-xs">No Image</span>
+          </div>
+        </div>
+        <p class="font-bold text-white">${escapeHtml(p.name)}</p>
+        <p class="text-sm text-gray-400">${escapeHtml(p.brand || 'N/A')}</p>
+        <p class="text-violet-400 font-bold mt-2">₹${Number(p.price).toLocaleString()}</p>
+        <button class="delete-featured-btn bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded w-full mt-3 transition" data-id="${p._id}">
+           Delete
+        </button>
+      </div>
+    `).join('');
+
+    document.querySelectorAll('.delete-featured-btn').forEach(btn => {
+      btn.onclick = async () => {
+        if (!confirm('Remove from featured?')) return;
+        const res = await fetch(`${API_BASE}/featured-products/${btn.dataset.id}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        });
+        if (res.ok) loadAdminFeatured();
+        else alert('Delete failed');
+      };
+    });
+  } catch {
+    container.innerHTML = '<p class="text-red-400 col-span-full text-center py-8">Failed loading featured products</p>';
+  }
+}
+
+document.getElementById('addFeaturedBtn').onclick = async () => {
+  const name  = document.getElementById('featName').value.trim();
+  const brand = document.getElementById('featBrand').value.trim();
+  const price = parseFloat(document.getElementById('featPrice').value);
+  const image = document.getElementById('featImage').value.trim();
+
+  if (!name || !brand || isNaN(price) || !image) {
+    alert('Please fill all fields');
+    return;
+  }
+
+  const res = await fetch(`${API_BASE}/featured-products`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ name, brand, price, image })
+  });
+  const data = await res.json();
+
+  if (data.success) {
+    document.getElementById('featName').value  = '';
+    document.getElementById('featBrand').value = '';
+    document.getElementById('featPrice').value = '';
+    document.getElementById('featImage').value = '';
+    alert('Featured product added');
+    loadAdminFeatured();
+  } else {
+    alert('Failed to add featured product');
   }
 };
 
@@ -541,6 +674,7 @@ async function loginAdmin() {
       document.getElementById("loginError").classList.add("hidden");
 
       loadAdminProducts();
+      loadAdminFeatured();
       loadComplaints();
       loadOrders();
 
@@ -566,6 +700,7 @@ function initApp() {
     document.getElementById("loginOverlay").style.display = "none";
 
     loadAdminProducts();
+    loadAdminFeatured();
     loadComplaints();
     loadOrders();
 

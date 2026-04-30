@@ -80,11 +80,23 @@ mongoose.connect(process.env.MONGO_URI)
 const productSchema = new mongoose.Schema({
   name: String,
   price: Number,
+  originalPrice: Number,
+  discount: Number,
   brand: String,
   image: String
 }, { timestamps: true });
 
 const Product = mongoose.model("Product", productSchema);
+
+// FEATURED PRODUCT
+const featuredProductSchema = new mongoose.Schema({
+  name: String,
+  price: Number,
+  brand: String,
+  image: String
+}, { timestamps: true });
+
+const FeaturedProduct = mongoose.model("FeaturedProduct", featuredProductSchema);
 
 // USER
 const userSchema = new mongoose.Schema({
@@ -265,7 +277,7 @@ app.post("/api/products", adminAuth, async(req,res)=>{
   console.log("POST /api/products received");
   console.log("Body:", req.body);
   try{
-    const {name,brand,price,image} = req.body;
+    const {name,brand,price,image,originalPrice,discount} = req.body;
 
     if(!name || !brand || !price || !image){
       console.log("Missing fields - name:", name, "brand:", brand, "price:", price, "image:", image);
@@ -276,7 +288,9 @@ app.post("/api/products", adminAuth, async(req,res)=>{
       name,
       brand,
       price:Number(price),
-      image
+      image,
+      originalPrice: originalPrice ? Number(originalPrice) : undefined,
+      discount: discount ? Number(discount) : undefined
     });
     
     console.log("Product created:", product._id);
@@ -295,6 +309,54 @@ app.delete("/api/products/:id", adminAuth, async(req,res)=>{
     res.json({success:true});
   }catch{
     res.status(500).json({success:false});
+  }
+});
+
+// GET NEWEST PRODUCTS (latest 8 by createdAt)
+app.get("/api/products/newest", async (req, res) => {
+  try {
+    const products = await Product.find().sort({ createdAt: -1 }).limit(8);
+    res.json(products);
+  } catch {
+    res.status(500).json([]);
+  }
+});
+
+/* =========================
+   FEATURED PRODUCTS
+========================= */
+
+// GET ALL FEATURED PRODUCTS
+app.get("/api/featured-products", async (req, res) => {
+  try {
+    const products = await FeaturedProduct.find().sort({ createdAt: -1 });
+    res.json(products);
+  } catch {
+    res.status(500).json([]);
+  }
+});
+
+// ADMIN ADD FEATURED PRODUCT
+app.post("/api/featured-products", adminAuth, async (req, res) => {
+  try {
+    const { name, brand, price, image } = req.body;
+    if (!name || !brand || !price || !image) {
+      return res.status(400).json({ success: false, message: "Missing required fields" });
+    }
+    await FeaturedProduct.create({ name, brand, price: Number(price), image });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// ADMIN DELETE FEATURED PRODUCT
+app.delete("/api/featured-products/:id", adminAuth, async (req, res) => {
+  try {
+    await FeaturedProduct.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ success: false });
   }
 });
 /* =========================
