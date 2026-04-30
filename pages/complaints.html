@@ -115,30 +115,24 @@
   </div>
 
   <script>
-    // Submit complaint
-    document.getElementById('complaint-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('email').value;
-      const message = document.getElementById('message').value;
+  // Load complaints from localStorage (like cart logic)
+  let complaints = JSON.parse(localStorage.getItem("complaints")) || [];
 
-      const res = await fetch('http://localhost:5000/api/complaints', { 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, message })
-      });
+  document.getElementById('complaint-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = document.getElementById('email').value;
+    const message = document.getElementById('message').value;
 
-      const data = await res.json();
-      const msgBox = document.getElementById('message-box');
+    // Save complaint locally
+    complaints.push({ email, message, date: new Date().toISOString() });
+    localStorage.setItem("complaints", JSON.stringify(complaints));
 
-      if (data.success) {
-        msgBox.textContent = "✅ Complaint submitted successfully!";
-        msgBox.style.color = "#16a34a"; // green
-        e.target.reset();
-      } else {
-        msgBox.textContent = "❌ Error submitting complaint. Please try again.";
-        msgBox.style.color = "#f97316"; // orange/red
-      }
-    });
-  </script>
+    const msgBox = document.getElementById('message-box');
+    msgBox.textContent = "✅ Complaint saved successfully!";
+    msgBox.style.color = "#16a34a"; // green
+    e.target.reset();
+  });
+</script>
+
 </body>
 </html>
