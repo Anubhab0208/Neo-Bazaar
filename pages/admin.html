@@ -1,95 +1,224 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en" data-theme="dark">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Neo-Bazaar — Admin Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-primary: #07060f;
+      --bg-secondary: #0f0d1a;
+      --bg-card: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+      --text-primary: #f0eeff;
+      --text-secondary: #9b93c4;
+      --text-muted: #5c5480;
+      --glow-purple: rgba(139,92,246,0.35);
+      --nav-bg: rgba(7,6,15,0.85);
+    }
+    [data-theme="light"] {
+      --bg-primary: #f8f7ff;
+      --bg-secondary: #ffffff;
+      --bg-card: rgba(0,0,0,0.03);
+      --border: rgba(0,0,0,0.08);
+      --text-primary: #121026;
+      --text-secondary: #5b5480;
+      --text-muted: #918ba8;
+      --nav-bg: rgba(248,247,255,0.9);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      transition: background 0.4s, color 0.4s;
+    }
+    h1, h2, h3, .heading { font-family: 'Syne', sans-serif; }
+
+    .mesh-bg {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background: 
+        radial-gradient(circle at 20% 30%, rgba(124, 58, 237, 0.12) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(251, 146, 60, 0.08) 0%, transparent 50%);
+    }
+
+    .glass {
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+    }
+
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: var(--nav-bg);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .grad-text {
+      background: linear-gradient(135deg, #a78bfa 0%, #fb923c 100%);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #7c3aed 0%, #fb923c 100%);
+      color: white;
+      font-weight: 600;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(124, 58, 237, 0.3);
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .nav-tab { 
+      transition: all 0.3s ease;
+      border-bottom: 4px solid transparent;
+      cursor: pointer;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+    .nav-tab:hover {
+      color: var(--text-primary);
+    }
+    .nav-tab.active {
+      border-bottom: 4px solid #7c3aed;
+      color: #a78bfa;
+    }
+  </style>
 </head>
-<body class="bg-gray-100">
+<body>
+      <!-- LOGIN OVERLAY -->
+    <div id="loginOverlay" class="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur">
+      <div class="w-full max-w-md bg-gray-900 border border-gray-700 rounded-xl p-6 shadow-2xl">
+        
+        <h2 class="text-2xl font-bold text-center text-violet-400 mb-6">
+          Admin Login
+        </h2>
 
-<!-- Header -->
-<header class="bg-gray-900 text-white p-4 shadow-lg">
-  <div class="max-w-7xl mx-auto flex justify-between items-center">
-    <div>
-      <h1 class="text-2xl font-bold">Neo-Bazaar Admin</h1>
-      <p class="text-sm text-gray-400">Product & Complaint Management</p>
-    </div>
+        <div class="space-y-4">
+          <input id="adminUser" type="text"
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white"
+            placeholder="Username">
 
-    <a href="/" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded transition">
-      🏠 View Store
-    </a>
-  </div>
-</header>
+          <input id="adminPass" type="password"
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white"
+            placeholder="Password">
 
-<div class="max-w-7xl mx-auto p-6">
+          <button onclick="loginAdmin()"
+            class="w-full bg-gradient-to-r from-violet-600 to-orange-500 text-white font-bold py-3 rounded-lg hover:opacity-90 transition">
+            Login
+          </button>
 
-  <!-- Two Column Layout -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
-
-    <!-- Add Product -->
-    <div class="bg-white rounded-xl shadow-lg p-6">
-      <h2 class="text-xl font-bold mb-4">Add New Product</h2>
-
-      <div class="space-y-4">
-
-        <div>
-          <label class="block text-sm font-medium mb-1">Product Name</label>
-          <input id="prodName" type="text"
-            class="w-full border rounded-lg p-2"
-            placeholder="Wireless Headphones">
+          <p id="loginError" class="text-red-400 text-sm text-center hidden">
+            Invalid credentials
+          </p>
         </div>
-
-        <div>
-          <label class="block text-sm font-medium mb-1">Brand</label>
-          <textarea id="prodBrand"
-            class="w-full border rounded-lg p-2"
-            rows="3"
-            placeholder="Brand name"></textarea>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium mb-1">Price (USD)</label>
-          <input id="prodPrice" type="number" step="0.01"
-            class="w-full border rounded-lg p-2"
-            placeholder="49.99">
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium mb-1">Image URL</label>
-          <input id="prodImage" type="url"
-            class="w-full border rounded-lg p-2"
-            placeholder="https://example.com/image.jpg">
-        </div>
-
-        <button id="addProductBtn"
-          class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg transition">
-           Add Product
-        </button>
 
       </div>
     </div>
+  <div class="mesh-bg"></div>
 
-    <!-- Complaints -->
-    <div class="bg-white rounded-xl shadow-lg p-6">
-      <h2 class="text-xl font-bold mb-4"> Customer Complaints</h2>
+  <!-- NAVIGATION -->
+  <nav class="h-16 flex items-center px-6 md:px-12">
+    <div class="flex items-center gap-2">
+      <div class="w-10 h-10 rounded bg-gradient-to-br from-violet-600 to-orange-400 flex items-center justify-center">
+        <img src="assets/img/WhatsApp Image 2026-04-29 at 19.17.47.jpeg" class="w-6 h-6 object-contain">
+      </div>
+      <span class="heading text-xl font-extrabold tracking-tighter grad-text">Neo-Bazaar Admin</span>
+    </div>
+    <div class="ml-auto flex items-center gap-4">
+      <button onclick="toggleTheme()" class="glass px-3 py-1 rounded-full text-sm">🌗</button>
+      <a href="/" class="glass px-5 py-1.5 rounded-full text-sm hover:bg-white/10 transition">Store</a>
+      <button onclick="logoutAdmin()" class="btn-primary px-5 py-1.5 rounded-full text-sm">Logout</button>
+    </div>
+  </nav>
 
-      <div id="complaintsList" class="space-y-3 max-h-96 overflow-y-auto">
-        <p class="text-gray-400 text-center py-8">Loading complaints...</p>
+  <!-- Navigation Tabs -->
+  <nav class="fixed top-16 left-0 right-0 z-50 h-14 px-6 md:px-12 bg-gradient-to-b from-var(--nav-bg) to-transparent">
+    <div class="flex items-center gap-8 h-14 max-w-7xl mx-auto">
+      <button onclick="switchTab('products')" class="nav-tab active text-sm md:text-base">
+        Products
+      </button>
+      <button onclick="switchTab('complaints')" class="nav-tab text-sm md:text-base">
+        Complaints
+      </button>
+      <button onclick="switchTab('orders')" class="nav-tab text-sm md:text-base">
+        Orders
+      </button>
+    </div>
+  </nav>
+
+  <div class="relative z-10 max-w-7xl mx-auto pt-32 px-6 md:px-12 pb-12">
+
+  <!-- PRODUCTS TAB -->
+  <div id="products-tab" class="tab-content active">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+      <!-- Add Product Form -->
+      <div class="lg:col-span-1">
+        <div class="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700 sticky top-8">
+          <h2 class="text-xl font-bold mb-6 text-green-400">Add New Product</h2>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Product Name</label>
+              <input id="prodName" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-green-500" placeholder="Wireless Headphones">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Brand</label>
+              <input id="prodBrand" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-green-500" placeholder="Brand name">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Price (₹)</label>
+              <input id="prodPrice" type="number" step="0.01" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-green-500" placeholder="999.99">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Image URL</label>
+              <input id="prodImage" type="url" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-green-500" placeholder="https://example.com/image.jpg">
+            </div>
+            <button id="addProductBtn" class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-3 rounded-lg transition shadow-lg">
+              Add Product
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Products Grid -->
+      <div class="lg:col-span-2">
+        <h2 class="text-2xl font-bold mb-6 text-green-400">Product Inventory</h2>
+        <div id="adminProductsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <p class="text-gray-400 col-span-full text-center py-8">Loading products...</p>
+        </div>
       </div>
     </div>
-
   </div>
 
-  <!-- Product Dashboard -->
-  <div class="bg-white rounded-xl shadow-lg p-6">
-    <h2 class="text-xl font-bold mb-4"> Product Dashboard</h2>
+  <!-- COMPLAINTS TAB -->
+  <div id="complaints-tab" class="tab-content">
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold mb-6 text-yellow-400">Customer Complaints</h2>
+      <div class="bg-gray-800 rounded-xl shadow-lg border border-gray-700">
+        <div id="complaintsList" class="space-y-0 max-h-[600px] overflow-y-auto">
+          <p class="text-gray-400 text-center py-12">Loading complaints...</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    <div id="adminProductsGrid"
-      class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      <p class="text-gray-400 col-span-full text-center py-8">
-        Loading products...
-      </p>
+  <!-- ORDERS TAB -->
+  <div id="orders-tab" class="tab-content">
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold mb-6 text-blue-400">Order Management</h2>
+      <div id="ordersList" class="space-y-4">
+        <p class="text-gray-400 text-center py-12">Loading orders...</p>
+      </div>
     </div>
   </div>
 
@@ -97,6 +226,54 @@
 
 <script>
 const API_BASE = `${window.location.origin}/api`;
+
+// Check if admin is authenticated
+function checkAdminAuth() {
+  const token = localStorage.getItem('adminToken');
+  if (!token) {
+    alert('You must login as admin first');
+    window.location.href = '/';
+  }
+  return token;
+}
+
+// Get auth headers with token
+function getAuthHeaders() {
+  const token = checkAdminAuth();
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  };
+}
+
+// Logout admin
+function logoutAdmin() {
+  localStorage.removeItem('adminToken');
+  window.location.href = '/';
+}
+
+// Switch between tabs
+function switchTab(tabName) {
+  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+  document.getElementById(tabName + '-tab').classList.add('active');
+  event.target.classList.add('active');
+}
+
+// Theme Toggle
+function toggleTheme() {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('adminTheme', next);
+}
+
+// Load saved theme
+(function loadTheme() {
+  const saved = localStorage.getItem('adminTheme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+})();
 
 function escapeHtml(str = '') {
   return String(str).replace(/[&<>"]/g, m => ({
@@ -110,31 +287,31 @@ function escapeHtml(str = '') {
 /* LOAD PRODUCTS */
 async function loadAdminProducts() {
   const container = document.getElementById('adminProductsGrid');
-
   try {
     const res = await fetch(`${API_BASE}/products`);
     const products = await res.json();
 
     if (!products.length) {
-      container.innerHTML =
-        '<p class="text-gray-400 col-span-full text-center py-8">No products yet</p>';
+      container.innerHTML = '<p class="text-gray-400 col-span-full text-center py-8">No products yet</p>';
       return;
     }
 
     container.innerHTML = products.map(p => `
-      <div class="border rounded-lg p-3 bg-gray-50 hover:shadow">
-        <img src="${p.image || ''}"
-             class="w-full h-40 object-cover rounded"
-             onerror="this.src='https://placehold.co/400x300?text=No+Image'">
-
-        <p class="font-bold mt-2">${escapeHtml(p.name)}</p>
-        <p class="text-sm text-gray-600">${escapeHtml(p.brand || '')}</p>
-        <p class="text-green-700 font-bold mt-1">$${Number(p.price).toFixed(2)}</p>
-
-        <button
-          class="delete-btn bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded w-full mt-2"
-          data-id="${p._id}">
-          Delete
+      <div class="bg-gray-700 border border-gray-600 rounded-lg p-4 hover:border-green-500 transition">
+        <div class="w-full h-40 rounded mb-3 bg-gray-800 flex items-center justify-center overflow-hidden">
+          <img src="${p.image || ''}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div class="hidden w-full h-full flex-col items-center justify-center text-gray-500">
+            <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span class="text-xs">No Image</span>
+          </div>
+        </div>
+        <p class="font-bold text-white">${escapeHtml(p.name)}</p>
+        <p class="text-sm text-gray-400">${escapeHtml(p.brand || 'N/A')}</p>
+        <p class="text-green-400 font-bold mt-2">₹${Number(p.price).toLocaleString()}</p>
+        <button class="delete-btn bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded w-full mt-3 transition" data-id="${p._id}">
+           Delete
         </button>
       </div>
     `).join('');
@@ -142,19 +319,16 @@ async function loadAdminProducts() {
     document.querySelectorAll('.delete-btn').forEach(btn => {
       btn.onclick = async () => {
         if (!confirm('Delete this product?')) return;
-
         const res = await fetch(`${API_BASE}/products/${btn.dataset.id}`, {
-          method: 'DELETE'
+          method: 'DELETE',
+          headers: getAuthHeaders()
         });
-
         if (res.ok) loadAdminProducts();
         else alert('Delete failed');
       };
     });
-
   } catch {
-    container.innerHTML =
-      '<p class="text-red-500 col-span-full text-center py-8">Failed loading products</p>';
+    container.innerHTML = '<p class="text-red-400 col-span-full text-center py-8">Failed loading products</p>';
   }
 }
 
@@ -162,147 +336,247 @@ async function loadAdminProducts() {
 async function addProduct(name, brand, price, image) {
   const res = await fetch(`${API_BASE}/products`, {
     method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({
-      name,
-      brand,
-      price,
-      image
-    })
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ name, brand, price, image })
   });
-
   const data = await res.json();
   return data.success;
 }
 
 /* LOAD COMPLAINTS */
-
-
 async function loadComplaints() {
   const container = document.getElementById("complaintsList");
-
   try {
-    const res = await fetch(`${API_BASE}/complaints`);
+    const res = await fetch(`${API_BASE}/complaints`, {
+      headers: getAuthHeaders()
+    });
     const complaints = await res.json();
 
     if (!complaints.length) {
-      container.innerHTML =
-        `<p class="text-green-600 text-center py-8">No complaints</p>`;
+      container.innerHTML = `<p class="text-green-400 text-center py-12"> No complaints</p>`;
       return;
     }
 
     container.innerHTML = complaints.map(c => `
-      <div class="border rounded-lg p-4 ${
-        c.resolved ? 'bg-green-50 border-green-300' : 'bg-amber-50 border-amber-300'
-      }">
-
-        <div class="flex justify-between items-start gap-3">
-          <div>
-            <p class="font-bold text-sm">${escapeHtml(c.email)}</p>
-            <p class="text-sm mt-1">${escapeHtml(c.message)}</p>
-
-            <p class="text-xs text-gray-500 mt-2">
-              ${new Date(c.createdAt).toLocaleString()}
-            </p>
-
-            <p class="text-xs font-semibold mt-1 ${
-              c.resolved ? 'text-green-700' : 'text-amber-700'
-            }">
-              ${c.resolved ? 'Resolved' : 'Pending'}
+      <div class="border-b border-gray-700 p-6 last:border-b-0 hover:bg-gray-700/50 transition">
+        <div class="flex justify-between items-start gap-4">
+          <div class="flex-1">
+            <p class="font-bold text-white">${escapeHtml(c.email)}</p>
+            <p class="text-gray-300 mt-2">${escapeHtml(c.message)}</p>
+            <p class="text-xs text-gray-500 mt-3">${new Date(c.createdAt).toLocaleString()}</p>
+            <p class="text-xs font-semibold mt-2 ${c.resolved ? 'text-green-400' : 'text-yellow-400'}">
+              ${c.resolved ? ' Resolved' : ' Pending'}
             </p>
           </div>
-
-          <div class="flex flex-col gap-2 min-w-[100px]">
-
-            ${
-              !c.resolved
-              ? `
-              <button
-                class="resolve-btn bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm"
-                data-id="${c._id}">
-                Resolve
-              </button>
-              `
-              : ''
-            }
-
-            <button
-              class="delete-complaint-btn bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
-              data-id="${c._id}">
-              Delete
-            </button>
-
+          <div class="flex flex-col gap-2">
+            ${!c.resolved ? `<button class="resolve-btn bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm transition" data-id="${c._id}">Resolve</button>` : ''}
+            <button class="delete-complaint-btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm transition" data-id="${c._id}">Delete</button>
           </div>
         </div>
       </div>
     `).join("");
 
-    // Resolve buttons
-    document.querySelectorAll(".resolve-btn").forEach(btn => {
+        document.querySelectorAll(".resolve-btn").forEach(btn => {
       btn.onclick = async () => {
-        const res = await fetch(
-          `${API_BASE}/complaints/${btn.dataset.id}/resolve`,
-          { method: "PUT" }
-        );
-
+        if (!confirm("Resolve and delete this complaint?")) return;
+        const res = await fetch(`${API_BASE}/complaints/${btn.dataset.id}`, { method: "DELETE", headers: getAuthHeaders() });
         if (res.ok) loadComplaints();
         else alert("Failed to resolve complaint");
       };
     });
 
-    // Delete buttons
     document.querySelectorAll(".delete-complaint-btn").forEach(btn => {
       btn.onclick = async () => {
         if (!confirm("Delete complaint?")) return;
-
-        const res = await fetch(
-          `${API_BASE}/complaints/${btn.dataset.id}`,
-          { method: "DELETE" }
-        );
-
+        const res = await fetch(`${API_BASE}/complaints/${btn.dataset.id}`, { method: "DELETE", headers: getAuthHeaders() });
         if (res.ok) loadComplaints();
         else alert("Delete failed");
       };
     });
-
   } catch {
-    container.innerHTML =
-      `<p class="text-red-500 text-center py-8">Failed loading complaints</p>`;
+    container.innerHTML = `<p class="text-red-400 text-center py-8">Failed loading complaints</p>`;
   }
 }
 
+/* LOAD ORDERS */
+async function loadOrders() {
+  const container = document.getElementById("ordersList");
+  try {
+    const res = await fetch(`${API_BASE}/orders`, {
+      headers: getAuthHeaders()
+    });
+    const orders = await res.json();
 
-/* BUTTON EVENT */
+    if (!orders.length) {
+      container.innerHTML = `<p class="text-gray-400 text-center py-12">📭 No orders yet</p>`;
+      return;
+    }
+
+    container.innerHTML = orders.map(o => `
+      <div class="bg-gray-800 border border-gray-700 rounded-lg p-6 hover:border-blue-500 transition">
+        <div class="flex justify-between items-start gap-4 mb-4">
+          <div class="flex-1">
+            <p class="font-bold text-white text-lg">Order #${o._id.substring(0, 8).toUpperCase()}</p>
+            <p class="text-sm text-gray-400 mt-1">Customer: ${escapeHtml(o.user?.email || 'N/A')}</p>
+            <p class="text-sm text-gray-400">Date: ${new Date(o.createdAt).toLocaleString()}</p>
+          </div>
+          <span class="px-3 py-1 rounded-full text-sm font-semibold ${o.status === 'Delivered' ? 'bg-green-600 text-white' : o.status === 'Shipped' ? 'bg-blue-600 text-white' : o.status === 'Cancelled' ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'}">
+            ${escapeHtml(o.status)}
+          </span>
+        </div>
+        
+        <div class="bg-gray-700/50 rounded p-4 mb-4">
+          <p class="text-sm text-gray-300 mb-2"><strong>Items:</strong></p>
+          ${o.items && o.items.length ? o.items.map(item => `
+            <p class="text-xs text-gray-400 ml-2">• ${escapeHtml(item.name)} x${item.quantity} - ₹${Number(item.price * item.quantity).toLocaleString()}</p>
+          `).join('') : '<p class="text-xs text-gray-500 ml-2">No items</p>'}
+          
+          <div class="border-t border-gray-600 mt-3 pt-3 text-sm">
+            <p class="text-gray-300">Subtotal: ₹${Number(o.subtotal || 0).toLocaleString()}</p>
+            ${o.discount ? `<p class="text-green-400">Discount: -₹${Number(o.discount).toLocaleString()}</p>` : ''}
+            ${o.gst ? `<p class="text-gray-300">GST: ₹${Number(o.gst).toLocaleString()}</p>` : ''}
+            <p class="text-lg font-bold text-white mt-2">Total: ₹${Number(o.total || 0).toLocaleString()}</p>
+            <p class="text-xs text-gray-400 mt-1">Payment: ${escapeHtml(o.paymentMethod || 'N/A')}</p>
+            ${o.location ? '<p class="text-xs text-gray-400 mt-1">Location: ' + escapeHtml(o.location) + '</p>' : ''}
+            ${o.contactNumber ? '<p class="text-xs text-gray-400 mt-1">Contact: ' + escapeHtml(o.contactNumber) + '</p>' : ''}
+          </div>
+        </div>
+
+        <div class="flex gap-2 flex-wrap">
+          <select class="status-select bg-gray-700 text-white px-3 py-2 rounded text-sm cursor-pointer" data-id="${o._id}" value="${o.status}">
+            <option value="Placed">Placed</option>
+            <option value="Shipped">Shipped</option>
+            <option value="Delivered">Delivered</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+          <button class="delete-order-btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm transition" data-id="${o._id}">🗑️ Delete</button>
+        </div>
+      </div>
+    `).join("");
+
+    document.querySelectorAll(".status-select").forEach(select => {
+      select.onchange = async () => {
+        const res = await fetch(`${API_BASE}/orders/${select.dataset.id}/status`, {
+          method: "PUT",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ status: select.value })
+        });
+        if (res.ok) {
+          alert("✅ Order status updated");
+          loadOrders();
+        } else {
+          alert("Failed to update order status");
+          loadOrders();
+        }
+      };
+    });
+
+    document.querySelectorAll(".delete-order-btn").forEach(btn => {
+      btn.onclick = async () => {
+        if (!confirm("Delete this order?")) return;
+        const res = await fetch(`${API_BASE}/orders/${btn.dataset.id}`, {
+          method: "DELETE",
+          headers: getAuthHeaders()
+        });
+        if (res.ok) {
+          alert("Order deleted");
+          loadOrders();
+        } else {
+          alert("Failed to delete order");
+        }
+      };
+    });
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = `<p class="text-red-400 text-center py-8">Failed loading orders</p>`;
+  }
+}
+
+/* BUTTON EVENTS */
 document.getElementById('addProductBtn').onclick = async () => {
-  const name = prodName.value.trim();
-  const brand = prodBrand.value.trim();
-  const price = parseFloat(prodPrice.value);
-  const image = prodImage.value.trim();
+  const name = document.getElementById('prodName').value.trim();
+  const brand = document.getElementById('prodBrand').value.trim();
+  const price = parseFloat(document.getElementById('prodPrice').value);
+  const image = document.getElementById('prodImage').value.trim();
 
   if (!name || !brand || isNaN(price) || !image) {
-    alert('Fill all fields');
+    alert('Please fill all fields');
     return;
   }
 
   const ok = await addProduct(name, brand, price, image);
 
   if (ok) {
-    prodName.value = '';
-    prodBrand.value = '';
-    prodPrice.value = '';
-    prodImage.value = '';
-
-    alert('Product added');
+    document.getElementById('prodName').value = '';
+    document.getElementById('prodBrand').value = '';
+    document.getElementById('prodPrice').value = '';
+    document.getElementById('prodImage').value = '';
+    alert('Product added successfully');
     loadAdminProducts();
   } else {
-    alert('Failed');
+    alert('Failed to add product');
   }
 };
 
+// Admin Login
+async function loginAdmin() {
+  const email = document.getElementById("adminUser").value;
+  const password = document.getElementById("adminPass").value;
+
+  try {
+    const res = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      localStorage.setItem("adminToken", data.token);
+
+      document.getElementById("loginOverlay").style.display = "none";
+      document.getElementById("loginError").classList.add("hidden");
+
+      loadAdminProducts();
+      loadComplaints();
+      loadOrders();
+
+      setInterval(loadComplaints, 10000);
+      setInterval(loadOrders, 15000);
+    } else {
+      document.getElementById("loginError").classList.remove("hidden");
+      document.getElementById("loginError").textContent = data.message || "Invalid credentials";
+    }
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById("loginError").classList.remove("hidden");
+    document.getElementById("loginError").textContent = "Server error. Please try again.";
+  }
+}
+
 /* INIT */
-loadAdminProducts();
-loadComplaints();
-setInterval(loadComplaints, 10000);
+function initApp() {
+  const token = localStorage.getItem("adminToken");
+
+  if (token) {
+    document.getElementById("loginOverlay").style.display = "none";
+
+    loadAdminProducts();
+    loadComplaints();
+    loadOrders();
+
+    setInterval(loadComplaints, 10000);
+    setInterval(loadOrders, 15000);
+  } else {
+    document.getElementById("loginOverlay").style.display = "flex";
+  }
+}
+
+initApp();
 </script>
 
 </body>
