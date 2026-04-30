@@ -119,7 +119,16 @@ const adminAuth = async (req, res, next) => {
       return res.status(401).json({ success: false, message: "No token" });
     }
 
-    const token = authHeader.split(" ")[1];
+    const parts = authHeader.split(" ");
+
+if (parts.length !== 2 || parts[0] !== "Bearer") {
+  return res.status(401).json({ 
+    success: false, 
+    message: "Invalid authorization format" 
+  });
+}
+
+const token = parts[1];
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
@@ -207,40 +216,31 @@ app.post("/api/login", async (req, res) => {
 /* =========================
    ADMIN AUTH
 ========================= */
-// ADMIN LOGIN
+// ADMIN LOGIN ENDPOINT
 app.post("/api/admin/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
     const admin = await Admin.findOne({ email });
-
     if (!admin) {
       return res.json({ success: false, message: "Admin not found" });
     }
 
     const match = await bcrypt.compare(password, admin.password);
-
     if (!match) {
-      return res.json({ success: false, message: "Wrong password" });
+      return res.json({ success: false, message: "Invalid password" });
     }
 
     const token = jwt.sign(
-      {
-        id: admin._id,
-        role: "admin",
-        email: admin.email
-      },
+      { id: admin._id, email: admin.email, role: "admin" },
       process.env.JWT_SECRET,
-      { expiresIn: "1d" }
+      { expiresIn: "24h" }
     );
 
-    res.json({
-      success: true,
-      token
-    });
-
+    res.json({ success: true, token });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Login failed" });
+    console.error("Admin login error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 

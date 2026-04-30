@@ -97,6 +97,35 @@
   </style>
 </head>
 <body>
+      <!-- LOGIN OVERLAY -->
+    <div id="loginOverlay" class="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur">
+      <div class="w-full max-w-md bg-gray-900 border border-gray-700 rounded-xl p-6 shadow-2xl">
+        
+        <h2 class="text-2xl font-bold text-center text-violet-400 mb-6">
+          Admin Login
+        </h2>
+
+        <div class="space-y-4">
+          <input id="adminUser" type="text"
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white"
+            placeholder="Username">
+
+          <input id="adminPass" type="password"
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white"
+            placeholder="Password">
+
+          <button onclick="loginAdmin()"
+            class="w-full bg-gradient-to-r from-violet-600 to-orange-500 text-white font-bold py-3 rounded-lg hover:opacity-90 transition">
+            Login
+          </button>
+
+          <p id="loginError" class="text-red-400 text-sm text-center hidden">
+            Invalid credentials
+          </p>
+        </div>
+
+      </div>
+    </div>
   <div class="mesh-bg"></div>
 
   <!-- NAVIGATION -->
@@ -463,13 +492,65 @@ document.getElementById('addProductBtn').onclick = async () => {
   }
 };
 
+// Admin Login
+async function loginAdmin() {
+  const email = document.getElementById("adminUser").value;
+  const password = document.getElementById("adminPass").value;
+
+  try {
+    const res = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      localStorage.setItem("adminToken", data.token);
+
+      document.getElementById("loginOverlay").style.display = "none";
+      document.getElementById("loginError").classList.add("hidden");
+
+      loadAdminProducts();
+      loadComplaints();
+      loadOrders();
+
+      setInterval(loadComplaints, 10000);
+      setInterval(loadOrders, 15000);
+    } else {
+      document.getElementById("loginError").classList.remove("hidden");
+      document.getElementById("loginError").textContent = data.message || "Invalid credentials";
+    }
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById("loginError").classList.remove("hidden");
+    document.getElementById("loginError").textContent = "Server error. Please try again.";
+  }
+}
+
 /* INIT */
-checkAdminAuth();
-loadAdminProducts();
-loadComplaints();
-loadOrders();
-setInterval(loadComplaints, 10000);
-setInterval(loadOrders, 15000);
+function initApp() {
+  const token = localStorage.getItem("adminToken");
+
+  if (token) {
+    document.getElementById("loginOverlay").style.display = "none";
+
+    loadAdminProducts();
+    loadComplaints();
+    loadOrders();
+
+    setInterval(loadComplaints, 10000);
+    setInterval(loadOrders, 15000);
+  } else {
+    document.getElementById("loginOverlay").style.display = "flex";
+  }
+}
+
+initApp();
 </script>
 
 </body>
