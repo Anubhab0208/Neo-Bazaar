@@ -208,13 +208,15 @@
         <!-- Logged-out state -->
         <button id="openAuthBtn" onclick="openAuth('login')" class="btn-primary px-5 py-1.5 rounded-full text-sm">Account</button>
         <!-- Logged-in state (hidden until login) -->
-        <div id="userMenu" class="hidden">
+        <div id="userMenu" class="hidden group">
           <button class="btn-primary px-5 py-1.5 rounded-full text-sm" id="userEmailBtn">Hi 👋</button>
-          <div class="absolute right-0 mt-2 w-44 rounded-xl hidden group-hover:block z-50 shadow-xl dropdown-menu">
-            <p class="px-4 py-2 text-xs text-violet-300 truncate" id="loggedEmail"></p>
-            <hr class="border-white/10">
-            <a class="block px-4 py-2 hover:bg-white/10 cursor-pointer">Orders</a>
-            <a class="block px-4 py-2 hover:bg-white/10 text-red-400 cursor-pointer" onclick="logout()">Logout</a>
+          <div class="absolute right-0 top-full pt-2 w-44 z-50">
+            <div class="rounded-xl shadow-xl dropdown-menu overflow-hidden hidden group-hover:block">
+              <p class="px-4 py-2 text-xs text-violet-300 truncate" id="loggedEmail"></p>
+              <hr class="border-white/10">
+              <a href="pages/orders.html" class="block px-4 py-2 hover:bg-white/10 cursor-pointer text-[var(--text-primary)]">Orders</a>
+              <a class="block px-4 py-2 hover:bg-white/10 text-red-400 cursor-pointer" onclick="logout()">Logout</a>
+            </div>
           </div>
         </div>
       </div>
@@ -785,6 +787,51 @@
     }
 
     /* ══════════════════════════════════════
+       RECENT ORDER DISPLAY
+    ══════════════════════════════════════ */
+    function loadRecentOrder() {
+      const order = JSON.parse(localStorage.getItem('lastOrder'));
+      if (!order) return;
+
+      const section = document.getElementById('recentOrderSection');
+      const orderId = document.getElementById('recentOrderId');
+      const orderTotal = document.getElementById('recentOrderTotal');
+      const orderItems = document.getElementById('recentOrderItems');
+      const orderStatus = document.getElementById('orderStatus');
+      const deliveryStatus = document.getElementById('deliveryStatus');
+
+      section.classList.remove('hidden');
+      orderId.textContent = order.orderId ? '#' + order.orderId.substring(0, 8).toUpperCase() : '#NB' + Math.floor(Math.random() * 100000);
+      orderTotal.textContent = '₹' + Number(order.total || 0).toLocaleString();
+
+      // Status styling
+      const status = order.status || 'Placed';
+      orderStatus.textContent = status;
+      orderStatus.className = 'px-3 py-1 rounded-full text-sm font-semibold ' + 
+        (status === 'Delivered' ? 'bg-green-600 text-white' : 
+         status === 'Shipped' ? 'bg-blue-600 text-white' : 
+         status === 'Cancelled' ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white');
+
+      deliveryStatus.textContent = status === 'Placed' ? '📦 Processing' : 
+                                   status === 'Shipped' ? '🚚 Out for Delivery' : 
+                                   status === 'Delivered' ? '✅ Delivered' : status;
+      deliveryStatus.className = 'font-semibold ' + 
+        (status === 'Delivered' ? 'text-green-400' : 'text-yellow-400');
+
+      // Items list
+      const items = order.items || [];
+      orderItems.innerHTML = items.map(item => {
+        const qty = item.quantity || item.qty || 1;
+        return `<div class="flex justify-between"><span>${item.name} × ${qty}</span><span class="text-orange-400">₹${(item.price * qty).toLocaleString()}</span></div>`;
+      }).join('');
+    }
+
+    function clearRecentOrder() {
+      localStorage.removeItem('lastOrder');
+      document.getElementById('recentOrderSection').classList.add('hidden');
+    }
+
+    /* ══════════════════════════════════════
        SCROLL REVEAL
     ══════════════════════════════════════ */
     const observer = new IntersectionObserver((entries) => {
@@ -805,6 +852,7 @@
 
     loadProducts();
     renderCart();
+    loadRecentOrder();
 
     window.addEventListener("focus", () => {
       cart = JSON.parse(localStorage.getItem("cart")) || [];

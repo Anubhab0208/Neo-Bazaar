@@ -99,6 +99,47 @@ h1 {
   background:linear-gradient(135deg,#7c3aed,#f97316);
   color:white;
 }
+
+.status-badge {
+  padding:4px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:600;
+}
+.status-placed { background:#ca8a04; color:white; }
+.status-shipped { background:#2563eb; color:white; }
+.status-delivered { background:#16a34a; color:white; }
+.status-cancelled { background:#dc2626; color:white; }
+
+.order-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin:16px 0;
+}
+
+.order-info p:first-child {
+  font-size:12px;
+  color:var(--muted);
+  margin-bottom:4px;
+}
+
+.order-info p:last-child {
+  font-weight:600;
+}
+
+.items-list {
+  border-top:1px solid var(--border);
+  margin-top:12px;
+  padding-top:12px;
+}
+
+.item-row {
+  display:flex;
+  justify-content:space-between;
+  font-size:14px;
+  padding:4px 0;
+}
 </style>
 </head>
 
@@ -120,37 +161,68 @@ h1 {
 <script>
 const container = document.getElementById("orders");
 
-// 👉 currently using lastOrder (you can upgrade later to DB)
 const order = JSON.parse(localStorage.getItem("lastOrder"));
 
 if (!order) {
   container.innerHTML = `<p class="empty">No orders yet</p>`;
 } else {
-  let itemsHTML = "";
+  const orderId = order.orderId ? '#' + order.orderId.substring(0, 8).toUpperCase() : '#NB' + Math.floor(Math.random() * 100000);
+  const total = Number(order.total || 0).toLocaleString();
+  const status = order.status || 'Placed';
+  
+  const statusClass = status === 'Delivered' ? 'status-delivered' : 
+                      status === 'Shipped' ? 'status-shipped' : 
+                      status === 'Cancelled' ? 'status-cancelled' : 'status-placed';
+  
+  const deliveryText = status === 'Placed' ? '📦 Processing' : 
+                       status === 'Shipped' ? '🚚 Out for Delivery' : 
+                       status === 'Delivered' ? '✅ Delivered' : status;
 
+  let itemsHTML = "";
   order.items.forEach(item => {
     const qty = item.quantity || item.qty || 1;
-
+    const itemTotal = (item.price * qty).toLocaleString();
     itemsHTML += `
-      <div class="item">
+      <div class="item-row">
         <span>${item.name} × ${qty}</span>
-        <span>₹${item.price * qty}</span>
+        <span style="color:var(--orange)">₹${itemTotal}</span>
       </div>
     `;
   });
 
   container.innerHTML = `
-    <div class="order-card">
-
-      <div class="order-header">
-        <div>Order ID: <b>#NB${Math.floor(Math.random()*100000)}</b></div>
-        <div class="status">✔ Placed</div>
+    <div class="order-card" style="border-left:4px solid var(--purple);">
+      <div class="order-header" style="align-items:center;">
+        <div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:4px;">Order ID</p>
+          <p style="font-size:18px;font-weight:bold;">${orderId}</p>
+        </div>
+        <span class="status-badge ${statusClass}">${status}</span>
       </div>
 
-      ${itemsHTML}
+      <div class="order-grid">
+        <div class="order-info">
+          <p>Payment Status</p>
+          <p style="color:#16a34a;">✅ Paid</p>
+        </div>
+        <div class="order-info">
+          <p>Delivery Status</p>
+          <p style="color:${status === 'Delivered' ? '#16a34a' : '#ca8a04'};">${deliveryText}</p>
+        </div>
+        <div class="order-info">
+          <p>Total Amount</p>
+          <p style="color:var(--orange);font-size:20px;">₹${total}</p>
+        </div>
+        <div class="order-info">
+          <p>Date</p>
+          <p>${new Date(order.createdAt || Date.now()).toLocaleDateString()}</p>
+        </div>
+      </div>
 
-      <div class="total">Total: ₹${order.total}</div>
-
+      <div class="items-list">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">Items</p>
+        ${itemsHTML}
+      </div>
     </div>
   `;
 }
