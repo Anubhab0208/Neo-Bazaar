@@ -180,16 +180,16 @@
               <input id="prodBrand" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-green-500" placeholder="Brand name">
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Price (₹)</label>
-              <input id="prodPrice" type="number" step="0.01" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-green-500" placeholder="999.99">
+              <label class="block text-sm font-medium text-gray-300 mb-2">MSRP / Original Price (₹) <span class="text-gray-500 font-normal">— listed / market price</span></label>
+              <input id="prodOriginalPrice" type="number" step="0.01" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-green-500" placeholder="1999.99 (optional)" oninput="prodCalcFromMsrp()">
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Original Price (₹) <span class="text-gray-500 font-normal">— for discount badge</span></label>
-              <input id="prodOriginalPrice" type="number" step="0.01" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-green-500" placeholder="1999.99 (optional)">
+              <label class="block text-sm font-medium text-gray-300 mb-2">Sell Price (₹) <span class="text-gray-500 font-normal">— what the customer pays</span></label>
+              <input id="prodPrice" type="number" step="0.01" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-green-500" placeholder="999.99" oninput="prodCalcFromSellPrice()">
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-300 mb-2">Discount % <span class="text-gray-500 font-normal">— items &gt;50% appear in deals ticker</span></label>
-              <input id="prodDiscount" type="number" min="0" max="100" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-green-500" placeholder="65 (optional)">
+              <input id="prodDiscount" type="number" min="0" max="100" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-green-500" placeholder="65 (optional)" oninput="prodCalcFromDiscount()">
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-300 mb-2">Image URL</label>
@@ -228,8 +228,16 @@
               <input id="featBrand" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-violet-500" placeholder="Brand name">
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Price (₹)</label>
-              <input id="featPrice" type="number" step="0.01" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-violet-500" placeholder="999.99">
+              <label class="block text-sm font-medium text-gray-300 mb-2">MSRP / Original Price (₹) <span class="text-gray-500 font-normal">— listed / market price</span></label>
+              <input id="featOriginalPrice" type="number" step="0.01" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-violet-500" placeholder="1999.99 (optional)" oninput="featCalcFromMsrp()">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Sell Price (₹) <span class="text-gray-500 font-normal">— what the customer pays</span></label>
+              <input id="featPrice" type="number" step="0.01" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-violet-500" placeholder="999.99" oninput="featCalcFromSellPrice()">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Discount % <span class="text-gray-500 font-normal">— auto-calculated or enter manually</span></label>
+              <input id="featDiscount" type="number" min="0" max="100" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-violet-500" placeholder="65 (optional)" oninput="featCalcFromDiscount()">
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-300 mb-2">Image URL</label>
@@ -622,28 +630,36 @@ async function loadAdminFeatured() {
 }
 
 document.getElementById('addFeaturedBtn').onclick = async () => {
-  const name  = document.getElementById('featName').value.trim();
-  const brand = document.getElementById('featBrand').value.trim();
-  const price = parseFloat(document.getElementById('featPrice').value);
-  const image = document.getElementById('featImage').value.trim();
+  const name          = document.getElementById('featName').value.trim();
+  const brand         = document.getElementById('featBrand').value.trim();
+  const price         = parseFloat(document.getElementById('featPrice').value);
+  const image         = document.getElementById('featImage').value.trim();
+  const originalPrice = parseFloat(document.getElementById('featOriginalPrice').value) || undefined;
+  const discount      = parseFloat(document.getElementById('featDiscount').value) || undefined;
 
   if (!name || !brand || isNaN(price) || !image) {
     alert('Please fill all fields');
     return;
   }
 
+  const body = { name, brand, price, image };
+  if (originalPrice) body.originalPrice = originalPrice;
+  if (discount)      body.discount      = discount;
+
   const res = await fetch(`${API_BASE}/featured-products`, {
     method: 'POST',
     headers: getAuthHeaders(),
-    body: JSON.stringify({ name, brand, price, image })
+    body: JSON.stringify(body)
   });
   const data = await res.json();
 
   if (data.success) {
-    document.getElementById('featName').value  = '';
-    document.getElementById('featBrand').value = '';
-    document.getElementById('featPrice').value = '';
-    document.getElementById('featImage').value = '';
+    document.getElementById('featName').value          = '';
+    document.getElementById('featBrand').value         = '';
+    document.getElementById('featPrice').value         = '';
+    document.getElementById('featImage').value         = '';
+    document.getElementById('featOriginalPrice').value = '';
+    document.getElementById('featDiscount').value      = '';
     alert('Featured product added');
     loadAdminFeatured();
   } else {
@@ -689,6 +705,85 @@ async function loginAdmin() {
     console.error(err);
     document.getElementById("loginError").classList.remove("hidden");
     document.getElementById("loginError").textContent = "Server error. Please try again.";
+  }
+}
+
+/* =============================================
+   AUTO-CALC: PRODUCTS TAB
+   MSRP = prodOriginalPrice | Sell = prodPrice | Disc = prodDiscount
+   ============================================= */
+function prodCalcFromMsrp() {
+  // When MSRP changes, recalculate sell price from current discount (if any)
+  const msrp     = parseFloat(document.getElementById('prodOriginalPrice').value);
+  const discount = parseFloat(document.getElementById('prodDiscount').value);
+  if (!isNaN(msrp) && !isNaN(discount)) {
+    const sell = +(msrp * (1 - discount / 100)).toFixed(2);
+    document.getElementById('prodPrice').value = sell > 0 ? sell : 0;
+  }
+}
+
+function prodCalcFromSellPrice() {
+  const msrp = parseFloat(document.getElementById('prodOriginalPrice').value);
+  const sell = parseFloat(document.getElementById('prodPrice').value);
+  if (!isNaN(msrp) && !isNaN(sell) && msrp > 0) {
+    if (sell > msrp) {
+      // Sell price exceeds MSRP — raise MSRP to match, clear discount
+      document.getElementById('prodOriginalPrice').value = sell;
+      document.getElementById('prodDiscount').value      = '';
+    } else {
+      const disc = +(((msrp - sell) / msrp) * 100).toFixed(2);
+      document.getElementById('prodDiscount').value = disc >= 0 ? disc : 0;
+    }
+  }
+}
+
+function prodCalcFromDiscount() {
+  const msrp     = parseFloat(document.getElementById('prodOriginalPrice').value);
+  let   discount = parseFloat(document.getElementById('prodDiscount').value);
+  if (discount < 0) { discount = 0; document.getElementById('prodDiscount').value = 0; }
+  if (discount > 100) { discount = 100; document.getElementById('prodDiscount').value = 100; }
+  if (!isNaN(msrp) && !isNaN(discount)) {
+    const sell = +(msrp * (1 - discount / 100)).toFixed(2);
+    document.getElementById('prodPrice').value = sell > 0 ? sell : 0;
+  }
+}
+
+/* =============================================
+   AUTO-CALC: FEATURED TAB
+   MSRP = featOriginalPrice | Sell = featPrice | Disc = featDiscount
+   ============================================= */
+function featCalcFromMsrp() {
+  const msrp     = parseFloat(document.getElementById('featOriginalPrice').value);
+  const discount = parseFloat(document.getElementById('featDiscount').value);
+  if (!isNaN(msrp) && !isNaN(discount)) {
+    const sell = +(msrp * (1 - discount / 100)).toFixed(2);
+    document.getElementById('featPrice').value = sell > 0 ? sell : 0;
+  }
+}
+
+function featCalcFromSellPrice() {
+  const msrp = parseFloat(document.getElementById('featOriginalPrice').value);
+  const sell = parseFloat(document.getElementById('featPrice').value);
+  if (!isNaN(msrp) && !isNaN(sell) && msrp > 0) {
+    if (sell > msrp) {
+      // Sell price exceeds MSRP — raise MSRP, clear discount
+      document.getElementById('featOriginalPrice').value = sell;
+      document.getElementById('featDiscount').value      = '';
+    } else {
+      const disc = +(((msrp - sell) / msrp) * 100).toFixed(2);
+      document.getElementById('featDiscount').value = disc >= 0 ? disc : 0;
+    }
+  }
+}
+
+function featCalcFromDiscount() {
+  const msrp     = parseFloat(document.getElementById('featOriginalPrice').value);
+  let   discount = parseFloat(document.getElementById('featDiscount').value);
+  if (discount < 0) { discount = 0; document.getElementById('featDiscount').value = 0; }
+  if (discount > 100) { discount = 100; document.getElementById('featDiscount').value = 100; }
+  if (!isNaN(msrp) && !isNaN(discount)) {
+    const sell = +(msrp * (1 - discount / 100)).toFixed(2);
+    document.getElementById('featPrice').value = sell > 0 ? sell : 0;
   }
 }
 

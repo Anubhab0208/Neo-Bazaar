@@ -92,6 +92,8 @@ const Product = mongoose.model("Product", productSchema);
 const featuredProductSchema = new mongoose.Schema({
   name: String,
   price: Number,
+  originalPrice: Number,
+  discount: Number,
   brand: String,
   image: String
 }, { timestamps: true });
@@ -339,11 +341,17 @@ app.get("/api/featured-products", async (req, res) => {
 // ADMIN ADD FEATURED PRODUCT
 app.post("/api/featured-products", adminAuth, async (req, res) => {
   try {
-    const { name, brand, price, image } = req.body;
+    const { name, brand, price, image, originalPrice, discount } = req.body;
     if (!name || !brand || !price || !image) {
       return res.status(400).json({ success: false, message: "Missing required fields" });
     }
-    await FeaturedProduct.create({ name, brand, price: Number(price), image });
+
+    // Build the document; only include optional pricing fields when provided
+    const doc = { name, brand, price: Number(price), image };
+    if (originalPrice !== undefined && originalPrice !== '') doc.originalPrice = Number(originalPrice);
+    if (discount      !== undefined && discount      !== '') doc.discount      = Math.max(0, Math.min(100, Number(discount)));
+
+    await FeaturedProduct.create(doc);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ success: false, message: "Server error" });
