@@ -17,7 +17,7 @@
 
     /* NAV */
     nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 32px; display: flex; align-items: center; justify-content: space-between; }
-    .nav-logo { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; background: linear-gradient(90deg, #a78bfa, #f97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-logo { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; background: linear-gradient(90deg, #a78bfa, #f97316); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
     .nav-back { color: var(--muted); font-size: 13px; text-decoration: none; display: flex; align-items: center; gap: 6px; transition: color .2s; }
     .nav-back:hover { color: var(--purple); }
 
@@ -406,12 +406,14 @@
 
       // Save order info for success page
       localStorage.setItem("lastOrder", JSON.stringify({
-          orderId: data.orderId,
+          orderId: data._id || data.orderId,
           items: cart,
           total,
           delivery: deliveryCharge,
           name: orderData.user.name,
-          paymentMethod: selectedPayment
+          paymentMethod: selectedPayment,
+          status: data.status || "Placed",
+          createdAt: data.createdAt || new Date().toISOString()
         }));
 
       // Clear cart
