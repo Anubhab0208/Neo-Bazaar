@@ -150,9 +150,33 @@
       animation: scroll 25s linear infinite;
     }
 
-    /* Reveal logic */
-    .reveal { opacity: 0; transform: translateY(30px); transition: all 0.6s ease-out; }
-    .reveal.visible { opacity: 1; transform: translateY(0); }
+    /* ── DROPDOWN MENU ── */
+    .dropdown-menu {
+      background: rgba(10, 8, 20, 0.97);
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(12px);
+    }
+    [data-theme="light"] .dropdown-menu {
+      background: rgba(255,255,255,0.97);
+      border: 1px solid rgba(0,0,0,0.1);
+      color: var(--text-primary);
+    }
+    [data-theme="light"] .dropdown-menu a {
+      color: var(--text-primary);
+    }
+
+    /* ── LIGHT MODE MODAL ── */
+    [data-theme="light"] #authModal .glass,
+    [data-theme="light"] #complaintModal .glass {
+      background: rgba(255,255,255,0.95);
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+    [data-theme="light"] #authModal input,
+    [data-theme="light"] #complaintModal input,
+    [data-theme="light"] #complaintModal textarea {
+      background: rgba(0,0,0,0.06);
+      color: var(--text-primary);
+    }
   </style>
 </head>
 
@@ -162,9 +186,7 @@
   <!-- NAVIGATION -->
   <nav class="h-16 flex items-center px-6 md:px-12">
     <div class="flex items-center gap-2">
-      <div class="w-10 h-10 rounded bg-gradient-to-br from-violet-600 to-orange-400 flex items-center justify-center">
-        <img src="assets/img/WhatsApp Image 2026-04-29 at 19.17.47.jpeg" class="w-6 h-6 object-contain">
-      </div>
+      <img src="assets\img\NeoB_img.jpeg" class="w-20 h-20 object-contain">
       <span class="heading text-xl font-extrabold tracking-tighter grad-text">Neo-Bazaar</span>
     </div>
     <div class="hidden md:flex ml-10 gap-6 text-sm font-medium text-gray-400">
@@ -187,7 +209,7 @@
         <!-- Logged-in state (hidden until login) -->
         <div id="userMenu" class="hidden">
           <button class="btn-primary px-5 py-1.5 rounded-full text-sm" id="userEmailBtn">Hi 👋</button>
-          <div class="absolute right-0 mt-2 w-44 glass rounded-xl hidden group-hover:block z-50">
+          <div class="absolute right-0 mt-2 w-44 rounded-xl hidden group-hover:block z-50 shadow-xl dropdown-menu">
             <p class="px-4 py-2 text-xs text-violet-300 truncate" id="loggedEmail"></p>
             <hr class="border-white/10">
             <a class="block px-4 py-2 hover:bg-white/10 cursor-pointer">Orders</a>
@@ -200,7 +222,7 @@
       <div class="relative group cursor-pointer" onclick="goToCart()">
         <span class="text-xl">🛒</span>
         <span id="cartCount" class="absolute -top-2 -right-2 bg-orange-500 text-[10px] px-1.5 rounded-full">0</span>
-        <div class="absolute right-0 mt-2 w-72 glass rounded-xl p-4 hidden group-hover:block z-50">
+        <div class="absolute right-0 mt-2 w-72 dropdown-menu rounded-xl p-4 hidden group-hover:block z-50">
           <p class="text-sm font-bold mb-3">Cart</p>
           <div id="cartItems"><p class="text-xs text-gray-400">Cart is empty</p></div>
           <div id="cartTotal" class="hidden mt-3 border-t border-white/10 pt-3 flex justify-between text-sm font-bold">
@@ -436,6 +458,7 @@
           <li>Help Center</li>
           <li>Shipping Info</li>
           <li>Returns</li>
+
         </ul>
       </div>
       <div>
@@ -454,30 +477,29 @@
   <!-- ═══════════════════════════════════════════
        AUTH MODAL (Login / Register)
   ═══════════════════════════════════════════ -->
-  <div id="authModal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/60 backdrop-blur-sm">
-    <div class="glass rounded-2xl p-8 w-full max-w-sm mx-4 relative">
-      <button onclick="closeAuth()" class="absolute top-4 right-5 text-gray-400 hover:text-white text-xl">✕</button>
-
+  <div id="authModal" class="fixed inset-0 z-[200] hidden flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="glass rounded-2xl p-6 w-full max-w-sm mx-4 relative max-h-[90vh] overflow-y-auto">
       <!-- Tabs -->
-      <div class="flex mb-6 gap-3">
+      <div class="flex mb-6 gap-3 pr-8">
         <button id="tabLogin" onclick="switchTab('login')"
-          class="flex-1 h-10 rounded-lg font-semibold text-sm font-sans flex items-center justify-center transition btn-primary whitespace-nowrap overflow-visible">
-          <span class="block leading-normal">Login</span>
+          class="flex-1 h-10 rounded-lg font-semibold text-sm flex items-center justify-center transition btn-primary">
+          LOGIN
         </button>
 
         <button id="tabRegister" onclick="switchTab('register')"
-          class="flex-1 h-10 rounded-lg font-semibold text-sm font-sans flex items-center justify-center transition glass hover:bg-white/10 whitespace-nowrap overflow-visible">
-          <span class="block leading-normal">Register</span>
+          class="flex-1 h-10 rounded-lg font-semibold text-sm flex items-center justify-center transition glass hover:bg-white/10">
+          REGISTER
         </button>
       </div>
-
-      <h2 class="heading text-2xl font-bold mb-6" id="authTitle">Login</h2>
+      <button onclick="closeAuth()" class="absolute top-3 right-4 text-gray-400 hover:text-white text-lg leading-none">✕</button>
 
       <div class="space-y-4">
+        <input id="authUsername" type="text" placeholder="Username"
+          class="w-full glass rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 hidden bg-white/10 text-[var(--text-primary)] placeholder-[var(--text-muted)]">
         <input id="authEmail" type="email" placeholder="Email address"
-          class="w-full glass rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+          class="w-full glass rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white/10 text-[var(--text-primary)] placeholder-[var(--text-muted)]">
         <input id="authPassword" type="password" placeholder="Password"
-          class="w-full glass rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+          class="w-full glass rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white/10 text-[var(--text-primary)] placeholder-[var(--text-muted)]">
         <p id="authMsg" class="text-xs text-center hidden"></p>
         <button onclick="submitAuth()"
           class="w-full btn-primary py-3 rounded-xl font-bold text-sm" id="authSubmitBtn">Login</button>
@@ -625,37 +647,46 @@
     function switchTab(mode) {
       authMode = mode;
       const isLogin = mode === 'login';
-      document.getElementById('authTitle').textContent     = isLogin ? 'Login' : 'Register';
       document.getElementById('authSubmitBtn').textContent = isLogin ? 'Login' : 'Create Account';
       document.getElementById('tabLogin').className    = isLogin
-        ? 'flex-1 py-2 rounded-lg font-bold text-sm transition btn-primary'
-        : 'flex-1 py-2 rounded-lg font-bold text-sm transition glass hover:bg-white/10';
+        ? 'flex-1 h-10 rounded-lg font-semibold text-sm flex items-center justify-center transition btn-primary'
+        : 'flex-1 h-10 rounded-lg font-semibold text-sm flex items-center justify-center transition glass hover:bg-white/10';
       document.getElementById('tabRegister').className = !isLogin
-        ? 'flex-1 py-2 rounded-lg font-bold text-sm transition btn-primary'
-        : 'flex-1 py-2 rounded-lg font-bold text-sm transition glass hover:bg-white/10';
+        ? 'flex-1 h-10 rounded-lg font-semibold text-sm flex items-center justify-center transition btn-primary'
+        : 'flex-1 h-10 rounded-lg font-semibold text-sm flex items-center justify-center transition glass hover:bg-white/10';
       document.getElementById('switchHint').textContent = isLogin ? "Don't have an account?" : 'Already have one?';
       document.getElementById('switchLink').textContent = isLogin ? 'Register' : 'Login';
       document.getElementById('switchLink').onclick     = () => switchTab(isLogin ? 'register' : 'login');
       document.getElementById('authMsg').classList.add('hidden');
+      // Show username field only on register
+      const usernameEl = document.getElementById('authUsername');
+      if (isLogin) {
+        usernameEl.classList.add('hidden');
+        usernameEl.value = '';
+      } else {
+        usernameEl.classList.remove('hidden');
+      }
     }
 
     async function submitAuth() {
       const email    = document.getElementById('authEmail').value.trim();
       const password = document.getElementById('authPassword').value;
+      const username = document.getElementById('authUsername').value.trim();
       const msgEl    = document.getElementById('authMsg');
       if (!email || !password) { showMsg(msgEl, 'Please fill in all fields.', 'red'); return; }
+      if (authMode === 'register' && !username) { showMsg(msgEl, 'Please enter a username.', 'red'); return; }
       const endpoint = authMode === 'login' ? '/api/login' : '/api/register';
       try {
         const res  = await fetch(`${BASE}${endpoint}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
+          body: JSON.stringify({ email, password, username })
         });
         const data = await res.json();
         if (data.success) {
           if (authMode === 'login') {
             localStorage.setItem('user', JSON.stringify(data.user));
-            updateAccountUI(data.user.email);
+            updateAccountUI(data.user.email, data.user.username);
             closeAuth();
           } else {
             showMsg(msgEl, 'Account created! You can now login.', 'green');
@@ -674,17 +705,20 @@
       updateAccountUI(null);
     }
 
-    function updateAccountUI(email) {
+    function updateAccountUI(email, username) {
       const openBtn  = document.getElementById('openAuthBtn');
       const userMenu = document.getElementById('userMenu');
       const loggedEl = document.getElementById('loggedEmail');
+      const btnEl    = document.getElementById('userEmailBtn');
       if (email) {
         openBtn.classList.add('hidden');
         userMenu.classList.remove('hidden');
         loggedEl.textContent = email;
+        btnEl.textContent = (username || email);
       } else {
         openBtn.classList.remove('hidden');
         userMenu.classList.add('hidden');
+        btnEl.textContent = 'Hi 👋';
       }
     }
 
@@ -745,7 +779,10 @@
        INIT
     ══════════════════════════════════════ */
     const savedUser = localStorage.getItem('user');
-    if (savedUser) updateAccountUI(JSON.parse(savedUser).email);
+    if (savedUser) {
+      const u = JSON.parse(savedUser);
+      updateAccountUI(u.email, u.username);
+    }
     loadProducts();
     renderCart();
 

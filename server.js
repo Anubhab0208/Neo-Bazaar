@@ -9,6 +9,9 @@ const cors = require("cors");
 const multer = require("multer");
 const fs = require("fs");
 const https = require("https");
+const dns = require('dns');
+
+dns.setServers(['1.1.1.1','8.8.8.8']);
 
 const app = express();
 
@@ -85,7 +88,8 @@ const Product = mongoose.model("Product", productSchema);
 // USER
 const userSchema = new mongoose.Schema({
   email: { type: String, unique: true },
-  password: String
+  password: String,
+  username: String   // ← add this
 }, { timestamps: true });
 
 const User = mongoose.model("User", userSchema);
@@ -178,11 +182,12 @@ app.get("/pages/:page", (req, res) => {
 // REGISTER
 app.post("/api/register", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, username } = req.body;
 
     const hashed = await bcrypt.hash(password, 10);
 
-    const user = new User({ email, password: hashed });
+    const user = new User({ email, password: hashed, username });
+
     await user.save();
 
     res.json({ success: true, message: "User created" });
@@ -210,7 +215,7 @@ app.post("/api/login", async (req, res) => {
 
   res.json({
     success: true,
-    user: { email: user.email }
+    user: { email: user.email, username: user.username }  // ← add username
   });
 });
 /* =========================
