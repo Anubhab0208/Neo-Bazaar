@@ -353,9 +353,10 @@ async function loadComplaints() {
       </div>
     `).join("");
 
-    document.querySelectorAll(".resolve-btn").forEach(btn => {
+        document.querySelectorAll(".resolve-btn").forEach(btn => {
       btn.onclick = async () => {
-        const res = await fetch(`${API_BASE}/complaints/${btn.dataset.id}/resolve`, { method: "PUT", headers: getAuthHeaders() });
+        if (!confirm("Resolve and delete this complaint?")) return;
+        const res = await fetch(`${API_BASE}/complaints/${btn.dataset.id}`, { method: "DELETE", headers: getAuthHeaders() });
         if (res.ok) loadComplaints();
         else alert("Failed to resolve complaint");
       };
