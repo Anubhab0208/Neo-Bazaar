@@ -40,6 +40,7 @@ nav {
   font-size:20px;
   background:linear-gradient(90deg,#a78bfa,#f97316);
   -webkit-background-clip:text;
+  background-clip:text;
   -webkit-text-fill-color:transparent;
   text-decoration:none;
 }
@@ -160,12 +161,42 @@ h1 {
 
 <script>
 const container = document.getElementById("orders");
+const BASE = window.location.origin;
 
-const order = JSON.parse(localStorage.getItem("lastOrder"));
+async function loadOrder() {
+  const savedOrder = JSON.parse(localStorage.getItem("lastOrder"));
+  
+  if (!savedOrder) {
+    container.innerHTML = `<p class="empty">No orders yet</p>`;
+    return;
+  }
 
-if (!order) {
-  container.innerHTML = `<p class="empty">No orders yet</p>`;
-} else {
+  // First render with local data
+  renderOrder(savedOrder);
+
+  // Then fetch fresh data from server
+  if (savedOrder.orderId) {
+    try {
+      const res = await fetch(`${BASE}/api/orders/${savedOrder.orderId}`);
+      if (res.ok) {
+        const freshOrder = await res.json();
+        // Update localStorage with fresh data
+        localStorage.setItem("lastOrder", JSON.stringify({
+          ...savedOrder,
+          status: freshOrder.status,
+          createdAt: freshOrder.createdAt
+        }));
+        // Re-render with fresh status
+        renderOrder({ ...savedOrder, status: freshOrder.status, createdAt: freshOrder.createdAt });
+      }
+    } catch (err) {
+      console.error("Failed to fetch fresh order status:", err);
+      // Keep showing local data if fetch fails
+    }
+  }
+}
+
+function renderOrder(order) {
   const orderId = order.orderId ? '#' + order.orderId.substring(0, 8).toUpperCase() : '#NB' + Math.floor(Math.random() * 100000);
   const total = Number(order.total || 0).toLocaleString();
   const status = order.status || 'Placed';
@@ -177,6 +208,14 @@ if (!order) {
   const deliveryText = status === 'Placed' ? '📦 Processing' : 
                        status === 'Shipped' ? '🚚 Out for Delivery' : 
                        status === 'Delivered' ? '✅ Delivered' : status;
+
+  // Payment method and status
+  const paymentMethod = order.paymentMethod || 'cod';
+  const isCOD = paymentMethod === 'cod' || paymentMethod === 'Cash on Delivery';
+  const paymentStatusText = isCOD ? '❌ Not Paid' : '✅ Paid';
+  const paymentStatusColor = isCOD ? '#dc2626' : '#16a34a';
+  const paymentMethodLabels = { cod: 'Cash on Delivery', upi: 'UPI', card: 'Credit / Debit Card' };
+  const paymentMethodDisplay = paymentMethodLabels[paymentMethod] || paymentMethod;
 
   let itemsHTML = "";
   order.items.forEach(item => {
@@ -202,8 +241,12 @@ if (!order) {
 
       <div class="order-grid">
         <div class="order-info">
+          <p>Payment Method</p>
+          <p style="font-weight:500;">${paymentMethodDisplay}</p>
+        </div>
+        <div class="order-info">
           <p>Payment Status</p>
-          <p style="color:#16a34a;">✅ Paid</p>
+          <p style="color:${paymentStatusColor};">${paymentStatusText}</p>
         </div>
         <div class="order-info">
           <p>Delivery Status</p>
@@ -212,10 +255,6 @@ if (!order) {
         <div class="order-info">
           <p>Total Amount</p>
           <p style="color:var(--orange);font-size:20px;">₹${total}</p>
-        </div>
-        <div class="order-info">
-          <p>Date</p>
-          <p>${new Date(order.createdAt || Date.now()).toLocaleDateString()}</p>
         </div>
       </div>
 
@@ -230,6 +269,9 @@ if (!order) {
 function goHome(){
   window.location.href = "../index.html";
 }
+
+// Load order on page load
+loadOrder();
 </script>
 
 </body>
