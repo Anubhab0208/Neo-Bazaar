@@ -469,6 +469,11 @@
           class="flex-1 h-10 rounded-lg font-semibold text-sm font-sans flex items-center justify-center transition glass hover:bg-white/10 whitespace-nowrap overflow-visible">
           <span class="block leading-normal">Register</span>
         </button>
+
+        <button id="tabAdmin" onclick="switchTab('admin')"
+          class="flex-1 h-10 rounded-lg font-semibold text-sm font-sans flex items-center justify-center transition glass hover:bg-white/10 whitespace-nowrap overflow-visible">
+          <span class="block leading-normal">Admin</span>
+        </button>
       </div>
 
       <h2 class="heading text-2xl font-bold mb-6" id="authTitle">Login</h2>
@@ -625,17 +630,21 @@
     function switchTab(mode) {
       authMode = mode;
       const isLogin = mode === 'login';
-      document.getElementById('authTitle').textContent     = isLogin ? 'Login' : 'Register';
-      document.getElementById('authSubmitBtn').textContent = isLogin ? 'Login' : 'Create Account';
+      const isAdmin = mode === 'admin';
+      document.getElementById('authTitle').textContent     = isLogin ? 'Login' : isAdmin ? 'Admin Login' : 'Register';
+      document.getElementById('authSubmitBtn').textContent = isLogin ? 'Login' : isAdmin ? 'Admin Login' : 'Create Account';
       document.getElementById('tabLogin').className    = isLogin
         ? 'flex-1 py-2 rounded-lg font-bold text-sm transition btn-primary'
         : 'flex-1 py-2 rounded-lg font-bold text-sm transition glass hover:bg-white/10';
-      document.getElementById('tabRegister').className = !isLogin
+      document.getElementById('tabRegister').className = mode === 'register'
         ? 'flex-1 py-2 rounded-lg font-bold text-sm transition btn-primary'
         : 'flex-1 py-2 rounded-lg font-bold text-sm transition glass hover:bg-white/10';
-      document.getElementById('switchHint').textContent = isLogin ? "Don't have an account?" : 'Already have one?';
-      document.getElementById('switchLink').textContent = isLogin ? 'Register' : 'Login';
-      document.getElementById('switchLink').onclick     = () => switchTab(isLogin ? 'register' : 'login');
+      document.getElementById('tabAdmin').className = isAdmin
+        ? 'flex-1 py-2 rounded-lg font-bold text-sm transition btn-primary'
+        : 'flex-1 py-2 rounded-lg font-bold text-sm transition glass hover:bg-white/10';
+      document.getElementById('switchHint').textContent = isLogin ? "Don't have an account?" : isAdmin ? "Back to" : 'Already have one?';
+      document.getElementById('switchLink').textContent = isLogin ? 'Register' : isAdmin ? 'User Login' : 'Login';
+      document.getElementById('switchLink').onclick     = () => switchTab(isAdmin ? 'login' : isLogin ? 'register' : 'login');
       document.getElementById('authMsg').classList.add('hidden');
     }
 
@@ -644,7 +653,8 @@
       const password = document.getElementById('authPassword').value;
       const msgEl    = document.getElementById('authMsg');
       if (!email || !password) { showMsg(msgEl, 'Please fill in all fields.', 'red'); return; }
-      const endpoint = authMode === 'login' ? '/api/login' : '/api/register';
+      
+      let endpoint = authMode === 'login' ? '/api/login' : authMode === 'admin' ? '/api/admin/login' : '/api/register';
       try {
         const res  = await fetch(`${BASE}${endpoint}`, {
           method: 'POST',
@@ -657,6 +667,9 @@
             localStorage.setItem('user', JSON.stringify(data.user));
             updateAccountUI(data.user.email);
             closeAuth();
+          } else if (authMode === 'admin') {
+            localStorage.setItem('adminToken', data.token);
+            window.location.href = '/admin';
           } else {
             showMsg(msgEl, 'Account created! You can now login.', 'green');
             setTimeout(() => switchTab('login'), 1500);

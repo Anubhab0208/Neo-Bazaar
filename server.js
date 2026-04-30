@@ -1,5 +1,6 @@
 require("dotenv").config();
 
+const jwt = require("jsonwebtoken");
 const express = require("express");
 const mongoose = require("mongoose");
 const path = require("path");
@@ -46,7 +47,25 @@ const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } }); // 5M
    DATABASE
 ========================= */
 mongoose.connect(process.env.MONGO_URI)
-.then(() => console.log("MongoDB Connected"))
+.then(async () => {
+  console.log("MongoDB Connected");
+  
+  // Initialize admin if it doesn't exist
+  if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
+    const existingAdmin = await Admin.findOne({ email: process.env.ADMIN_EMAIL });
+    if (!existingAdmin) {
+      const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
+      const admin = new Admin({ 
+        email: process.env.ADMIN_EMAIL, 
+        password: hashedPassword 
+      });
+      await admin.save();
+      console.log("✅ Admin account created:", process.env.ADMIN_EMAIL);
+    } else {
+      console.log("✅ Admin account already exists");
+    }
+  }
+})
 .catch(err => console.log("DB Error:", err));
 
 /* =========================
@@ -92,12 +111,34 @@ const Complaint = mongoose.model("Complaint", complaintSchema);
 ========================= */
 
 // Admin authentication middleware
-const adminAuth = (req, res, next) => {
-  const adminKey = req.headers['admin-key'] || req.body.adminKey;
-  if (adminKey !== process.env.ADMIN_KEY) {
-    return res.status(401).json({ success: false, message: 'Unauthorized' });
+const adminAuth = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+      return res.status(401).json({ success: false, message: "No token" });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (decoded.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Admins only" });
+    }
+
+    // Verify admin still exists in database
+    const admin = await Admin.findById(decoded.id);
+    if (!admin) {
+      return res.status(403).json({ success: false, message: "Admin no longer exists" });
+    }
+
+    req.admin = decoded;
+    next();
+
+  } catch (err) {
+    return res.status(401).json({ success: false, message: "Invalid token" });
   }
-  next();
 };
 
 /* =========================
@@ -110,6 +151,15 @@ app.get("/", (req, res) => {
 });
 app.get("/admin", (req, res) => {
   res.sendFile(path.join(__dirname, "pages", "admin.html"));
+});
+app.get("/pages/:page", (req, res) => {
+  const page = req.params.page;
+  const validPages = ['admin', 'products', 'complaints', 'orders'];
+  if (validPages.includes(page)) {
+    res.sendFile(path.join(__dirname, "pages", page + ".html"));
+  } else {
+    res.status(404).send("Page not found");
+  }
 });
 
 /* =========================
@@ -157,41 +207,6 @@ app.post("/api/login", async (req, res) => {
 /* =========================
    ADMIN AUTH
 ========================= */
-
-// ADMIN REGISTER (run once manually if needed)
-app.post("/api/admin/register", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    const exists = await Admin.findOne({ email });
-
-    if (exists) {
-      return res.json({
-        success: false,
-        message: "Admin already exists"
-      });
-    }
-
-    const hashed = await bcrypt.hash(password, 10);
-
-    await Admin.create({
-      email,
-      password: hashed
-    });
-
-    res.json({
-      success: true,
-      message: "Admin created"
-    });
-
-  } catch {
-    res.json({
-      success: false,
-      message: "Admin creation failed"
-    });
-  }
-});
-
 // ADMIN LOGIN
 app.post("/api/admin/login", async (req, res) => {
   try {
@@ -200,31 +215,32 @@ app.post("/api/admin/login", async (req, res) => {
     const admin = await Admin.findOne({ email });
 
     if (!admin) {
-      return res.json({
-        success: false,
-        message: "Admin not found"
-      });
+      return res.json({ success: false, message: "Admin not found" });
     }
 
     const match = await bcrypt.compare(password, admin.password);
 
     if (!match) {
-      return res.json({
-        success: false,
-        message: "Wrong password"
-      });
+      return res.json({ success: false, message: "Wrong password" });
     }
+
+    const token = jwt.sign(
+      {
+        id: admin._id,
+        role: "admin",
+        email: admin.email
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
 
     res.json({
       success: true,
-      admin: { email: admin.email }
+      token
     });
 
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: "Login failed"
-    });
+    res.status(500).json({ success: false, message: "Login failed" });
   }
 });
 
@@ -239,7 +255,7 @@ app.get("/api/products", async (req, res) => {
 });
 
 // ADMIN ADD PRODUCT
-app.post("/api/products", async(req,res)=>{
+app.post("/api/products", adminAuth, async(req,res)=>{
   console.log("POST /api/products received");
   console.log("Body:", req.body);
   try{
@@ -267,7 +283,7 @@ app.post("/api/products", async(req,res)=>{
 });
 
 // ADMIN DELETE PRODUCT
-app.delete("/api/products/:id", async(req,res)=>{
+app.delete("/api/products/:id", adminAuth, async(req,res)=>{
   try{
     await Product.findByIdAndDelete(req.params.id);
     res.json({success:true});
@@ -279,7 +295,7 @@ app.delete("/api/products/:id", async(req,res)=>{
    COMPLAINTS
 ========================= */
 //View complaints
-app.get("/api/complaints", async(req,res)=>{
+app.get("/api/complaints", adminAuth, async(req,res)=>{
   try{
     const data = await Complaint.find().sort({createdAt:-1});
     res.json(data);
@@ -306,7 +322,7 @@ app.post("/api/complaints", async(req,res)=>{
   }
 });
 // Resolve complaint
-app.put("/api/complaints/:id/resolve", async (req, res) => {
+app.put("/api/complaints/:id/resolve", adminAuth, async (req, res) => {
   try {
     await Complaint.findByIdAndUpdate(req.params.id, {
       resolved: true
@@ -319,7 +335,7 @@ app.put("/api/complaints/:id/resolve", async (req, res) => {
 });
 
 // Delete complaint
-app.delete("/api/complaints/:id", async (req, res) => {
+app.delete("/api/complaints/:id", adminAuth, async (req, res) => {
   try {
     await Complaint.findByIdAndDelete(req.params.id);
     res.json({ success: true });
@@ -358,6 +374,38 @@ app.post("/api/orders", async (req, res) => {
     });
   }
 });
+
+// GET ALL ORDERS (ADMIN ONLY)
+app.get("/api/orders", adminAuth, async (req, res) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// UPDATE ORDER STATUS (ADMIN ONLY)
+app.put("/api/orders/:id/status", adminAuth, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    res.json({ success: true, order });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// DELETE ORDER (ADMIN ONLY)
+app.delete("/api/orders/:id", adminAuth, async (req, res) => {
+  try {
+    await Order.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 /* =========================
    GOOGLE DRIVE
 ========================= */
