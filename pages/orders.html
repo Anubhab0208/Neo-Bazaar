@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Orders — Neo-Bazaar</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg:#0b0918;
+  --surface:#121020;
+  --card:#1a1730;
+  --border:#2a2248;
+  --purple:#a78bfa;
+  --orange:#f97316;
+  --text:#e2deff;
+  --muted:#6b5fa0;
+}
+
+body {
+  background:var(--bg);
+  color:var(--text);
+  font-family:'DM Sans';
+  margin:0;
+}
+
+nav {
+  display:flex;
+  justify-content:space-between;
+  padding:16px 32px;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+}
+
+.logo {
+  font-family:'Syne';
+  font-weight:800;
+  font-size:20px;
+  background:linear-gradient(90deg,#a78bfa,#f97316);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  text-decoration:none;
+}
+
+.container {
+  max-width:900px;
+  margin:auto;
+  padding:40px 20px;
+}
+
+h1 {
+  font-family:'Syne';
+}
+
+.order-card {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:20px;
+  margin-bottom:20px;
+}
+
+.order-header {
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:15px;
+}
+
+.status {
+  color:#22c55e;
+  font-size:13px;
+}
+
+.item {
+  display:flex;
+  justify-content:space-between;
+  margin:8px 0;
+}
+
+.total {
+  margin-top:15px;
+  font-weight:bold;
+  color:var(--orange);
+}
+
+.empty {
+  color:var(--muted);
+}
+
+.btn {
+  margin-top:20px;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  font-family:'Syne';
+  background:linear-gradient(135deg,#7c3aed,#f97316);
+  color:white;
+}
+</style>
+</head>
+
+<body>
+
+<nav>
+  <a href="../index.html" class="logo">Neo-Bazaar</a>
+  <a href="../index.html" style="color:var(--muted);text-decoration:none;">← Continue Shopping</a>
+</nav>
+
+<div class="container">
+  <h1>📦 My Orders</h1>
+
+  <div id="orders"></div>
+
+  <button class="btn" onclick="goHome()">Shop More</button>
+</div>
+
+<script>
+const container = document.getElementById("orders");
+
+// 👉 currently using lastOrder (you can upgrade later to DB)
+const order = JSON.parse(localStorage.getItem("lastOrder"));
+
+if (!order) {
+  container.innerHTML = `<p class="empty">No orders yet</p>`;
+} else {
+  let itemsHTML = "";
+
+  order.items.forEach(item => {
+    const qty = item.quantity || item.qty || 1;
+
+    itemsHTML += `
+      <div class="item">
+        <span>${item.name} × ${qty}</span>
+        <span>₹${item.price * qty}</span>
+      </div>
+    `;
+  });
+
+  container.innerHTML = `
+    <div class="order-card">
+
+      <div class="order-header">
+        <div>Order ID: <b>#NB${Math.floor(Math.random()*100000)}</b></div>
+        <div class="status">✔ Placed</div>
+      </div>
+
+      ${itemsHTML}
+
+      <div class="total">Total: ₹${order.total}</div>
+
+    </div>
+  `;
+}
+
+function goHome(){
+  window.location.href = "../index.html";
+}
+</script>
+
+</body>
+</html>

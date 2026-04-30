@@ -10,6 +10,7 @@ const fs = require("fs");
 const https = require("https");
 
 const app = express();
+app.use(express.static(__dirname));
 
 /* =========================
    MIDDLEWARE

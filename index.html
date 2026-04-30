@@ -517,27 +517,35 @@
     ══════════════════════════════════════ */
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-    function addToCart(product) {
-        const existing = cart.find(i => i._id === product._id);
-
+    function addToCart(id) {
+        const product = products.find(p => p._id === id);
+        if (!product) return;
+        const existing = cart.find(i => i._id === id);
         if (existing) {
-          existing.qty++;
+          existing.quantity = (existing.quantity || 1) + 1;
         } else {
-          cart.push({ ...product, qty: 1 });
+          cart.push({
+            _id: product._id,
+            name: product.name,
+            price: product.price,
+            image: product.image,
+            quantity: 1
+          });
         }
-
-        // 🔥 IMPORTANT LINE (YOU ARE MISSING THIS)
         localStorage.setItem("cart", JSON.stringify(cart));
-
         renderCart();
-      }
+    }
+
+  // 🔥 ADD THESE
+  
+  
 
     function renderCart() {
       const countEl  = document.getElementById('cartCount');
       const itemsEl  = document.getElementById('cartItems');
       const totalEl  = document.getElementById('cartTotal');
       const totalPEl = document.getElementById('totalPrice');
-      const totalQty = cart.reduce((s, i) => s + i.qty, 0);
+      const totalQty = cart.reduce((s, i) => s + (i.quantity || i.qty || 1), 0);
       countEl.textContent = totalQty;
       if (cart.length === 0) {
         itemsEl.innerHTML = '<p class="text-xs text-gray-400">Cart is empty</p>';
@@ -545,10 +553,10 @@
       }
       itemsEl.innerHTML = cart.map(i => `
         <div class="flex justify-between text-xs py-1">
-          <span>${i.name} × ${i.qty}</span>
-          <span class="text-orange-400">₹${(i.price * i.qty).toLocaleString()}</span>
+          <span>${i.name} × ${i.quantity || i.qty || 1}</span>
+          <span class="text-orange-400">₹${(i.price * (i.quantity || i.qty || 1)).toLocaleString()}</span>
         </div>`).join('');
-      const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+      const total = cart.reduce((s, i) => s + i.price * (i.quantity || i.qty || 1), 0);
       totalPEl.textContent = '₹' + total.toLocaleString();
       totalEl.classList.remove('hidden');
     }
@@ -561,6 +569,9 @@
       try {
         const res  = await fetch(`${BASE}/api/products`);
         const data = await res.json();
+        window.products = data;
+
+
         if (!data.length) {
           grid.innerHTML = '<p class="text-gray-400 col-span-4 text-center py-10">No products yet. Check back soon!</p>';
           return;
@@ -576,8 +587,11 @@
             <h3 class="font-bold mb-2">${p.name}</h3>
             <div class="flex justify-between items-center">
               <span class="text-orange-400 font-bold">₹${Number(p.price).toLocaleString()}</span>
-              <button onclick='addToCart(${JSON.stringify({_id:p._id,name:p.name,price:p.price,image:p.image})})'
-                class="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-xs transition">🛒 Add</button>
+              <button 
+                onclick="addToCart('${p._id}')"
+                class="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-xs transition">
+                🛒 Add
+              </button>
             </div>
           </div>`).join('');
       } catch (err) {
@@ -746,12 +760,24 @@
     ══════════════════════════════════════ */
     const savedUser = localStorage.getItem('user');
     if (savedUser) updateAccountUI(JSON.parse(savedUser).email);
+    cart = JSON.parse(localStorage.getItem("cart")) || [];
     loadProducts();
     renderCart();
 
+    window.addEventListener("focus", () => {
+      cart = JSON.parse(localStorage.getItem("cart")) || [];
+      renderCart();
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) {
+        cart = JSON.parse(localStorage.getItem("cart")) || [];
+        renderCart();
+      }
+    });
     function goToCart() {
     localStorage.setItem("cart", JSON.stringify(cart));
-    window.location.href = "cart.html";
+    window.location.href = "pages/cart.html";
   }
   </script>
 </body>

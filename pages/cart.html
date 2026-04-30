@@ -122,8 +122,8 @@
 <body>
 
 <nav>
-  <a href="index.html" class="nav-logo">Neo-Bazaar</a>
-  <a href="index.html" style="color:var(--muted); text-decoration:none;">← Continue Shopping</a>
+  <a href="../index.html" class="nav-logo">Neo-Bazaar</a>
+  <a href="../index.html" style="color:var(--muted); text-decoration:none;">← Continue Shopping</a>
 </nav>
 
 <div class="container">
@@ -210,22 +210,21 @@ function renderCart() {
 }
 function changeQty(index, change) {
   if (!cart[index].quantity) {
-  cart[index].quantity = cart[index].qty || 1;
-    }
-
+    cart[index].quantity = cart[index].qty || 1;
+  }
   cart[index].quantity += change;
-
   if (cart[index].quantity <= 0) {
     cart.splice(index, 1);
   }
-
   localStorage.setItem("cart", JSON.stringify(cart));
+  window.dispatchEvent(new Event("storage"));
   renderCart();
 }
 
 function removeItem(index) {
   cart.splice(index, 1);
   localStorage.setItem("cart", JSON.stringify(cart));
+  window.dispatchEvent(new Event("storage"));
   renderCart();
 }
 
