@@ -354,6 +354,8 @@ const orderSchema = new mongoose.Schema({
   gst: Number,
   total: Number,
   paymentMethod: String,
+  location: String,
+  contactNumber: String,
   status: { type: String, default: "Placed" }
 }, { timestamps: true, strict: false }); // strict: false allows extra fields
 

@@ -356,6 +356,8 @@
       user: { name: fname + " " + document.getElementById("lname").value.trim(), email, phone, address, city, state, pin },
       items: cart.map(i => ({ productId: i._id || i.id || "", name: i.name, price: i.price, quantity: i.quantity || 1 })),
       paymentMethod: selectedPayment,
+      location: address + ", " + city + ", " + state + " - " + pin,
+      contactNumber: phone,
       subtotal, discount, gst, total
     };
 
