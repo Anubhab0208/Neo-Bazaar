@@ -128,8 +128,17 @@
       <div class="form-grid">
         <div class="form-group"><label>First name</label><input id="fname" placeholder="First name" required /></div>
         <div class="form-group"><label>Last name</label><input id="lname" placeholder="Last name" /></div>
-        <div class="form-group span2"><label>Email</label><input id="email" type="email" placeholder="you@example.com" required /></div>
-        <div class="form-group span2"><label>Phone</label><input id="phone" placeholder="+91 XXXXX XXXXX" required /></div>
+        <div class="form-group span2">
+          <label>Email</label>
+          <div style="background:#0e0c1c;border:1px solid var(--border);border-radius:9px;padding:12px 14px;font-size:14px;color:var(--text);" id="userEmailDisplay">—</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:6px;">💳 Payment will occur only from this account</div>
+          <input type="hidden" id="email" />
+        </div>
+        <div class="form-group span2"><label>Phone</label><input id="phone" placeholder="+91 XXXXX XXXXX" /></div>
+
+          
+          
+        
         <div class="form-group span2"><label>Address</label><input id="address" placeholder="House no. / Flat / Building / Street / Area" required /></div>
         <div class="form-group"><label>City</label><input id="city" placeholder="City" required /></div>
         <div class="form-group"><label>PIN Code</label><input id="pin" placeholder="PIN code" required oninput="updateTotals()" maxlength="6" /></div>
@@ -373,9 +382,9 @@
       return;
     }
 
-    if (!cart.length) {
-      showError("Your cart is empty!");
-      return;
+    if (!JSON.parse(localStorage.getItem("cart") || "[]").length) {
+      alert("Your cart is empty!");
+      window.location.href = "../index.html";
     }
 
     btn.classList.add("loading");
@@ -440,7 +449,14 @@
     }
   }
 
-  loadCart();
+  // Autofill email & phone from logged-in user
+    const _u = JSON.parse(localStorage.getItem("user") || "null");
+    if (_u) {
+      document.getElementById("userEmailDisplay").textContent = _u.email || "—";
+      document.getElementById("email").value = _u.email || "";
+    }
+
+    loadCart();
 </script>
 </body>
 </html>
