@@ -668,14 +668,14 @@
           fetch(`${BASE}/api/products`),
           fetch(`${BASE}/api/featured-products`)
         ]);
-        const regular = await res.json();
-        const featured = await featRes.json().catch(() => []);
+        const regular = res.ok ? await res.json() : [];
+        const featured = featRes.ok ? await featRes.json().catch(() => []) : [];
         // Tag featured products so we can render them distinctly
         featured.forEach(p => { p._isFeatured = true; });
-        // Merge: featured first, then regular (deduplicate by _id just in case)
-        const ids = new Set(regular.map(p => p._id));
+        // Merge: featured first, then regular
         allProducts = [...featured, ...regular];
-      } catch {
+      } catch(err) {
+        console.error('loadProducts error:', err);
         allProducts = [];
       }
     }
@@ -818,10 +818,15 @@
 
       let results = [...allProducts];
 
-      // --- Mode: Flash = only discounted, sorted by discount desc ---
+      // --- Mode: Flash = featured products + any product with a discount, sorted by discount desc ---
       if (pageMode === 'flash') {
-        results = results.filter(p => p.discount && p.discount > 0);
-        results.sort((a, b) => (b.discount || 0) - (a.discount || 0));
+        results = results.filter(p => p._isFeatured || (p.discount && p.discount > 0));
+        results.sort((a, b) => {
+          // Featured with discount first, then by discount amount
+          if (b._isFeatured && !a._isFeatured) return 1;
+          if (a._isFeatured && !b._isFeatured) return -1;
+          return (b.discount || 0) - (a.discount || 0);
+        });
       }
 
       // --- Query filter ---
