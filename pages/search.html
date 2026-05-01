@@ -446,16 +446,16 @@
             <div class="filter-title">Price Range</div>
             <div class="flex justify-between text-xs mb-2" style="color:var(--text-secondary)">
               <span>₹<span id="minPriceLabel">0</span></span>
-              <span>₹<span id="maxPriceLabel">100000</span></span>
+              <span>₹<span id="maxPriceLabel">10000000</span></span>
             </div>
             <div class="range-wrap mb-1">
-              <input type="range" id="minPrice" min="0" max="100000" step="500" value="0" oninput="updatePriceFilter()">
+              <input type="range" id="minPrice" min="0" max="10000000" step="1000" value="0" oninput="updatePriceFilter()">
             </div>
             <div class="range-wrap">
-              <input type="range" id="maxPrice" min="0" max="100000" step="500" value="100000" oninput="updatePriceFilter()">
+              <input type="range" id="maxPrice" min="0" max="10000000" step="1000" value="10000000" oninput="updatePriceFilter()">
             </div>
             <div class="text-xs mt-2 text-center" style="color:var(--text-muted)">
-              Showing: ₹<span id="priceRangeDisplay">0 – ₹1,00,000</span>
+              Showing: ₹<span id="priceRangeDisplay">0 – ₹1,00,00,000</span>
             </div>
           </div>
 
@@ -818,15 +818,10 @@
 
       let results = [...allProducts];
 
-      // --- Mode: Flash = featured products + any product with a discount, sorted by discount desc ---
+      // --- Mode: Flash = featured products + discounted regular products, highest discount first ---
       if (pageMode === 'flash') {
         results = results.filter(p => p._isFeatured || (p.discount && p.discount > 0));
-        results.sort((a, b) => {
-          // Featured with discount first, then by discount amount
-          if (b._isFeatured && !a._isFeatured) return 1;
-          if (a._isFeatured && !b._isFeatured) return -1;
-          return (b.discount || 0) - (a.discount || 0);
-        });
+        results.sort((a, b) => (b.discount || 0) - (a.discount || 0));
       }
 
       // --- Query filter ---
@@ -975,7 +970,7 @@
       const maxP = parseInt(document.getElementById('maxPrice').value);
       const lo = Math.min(minP, maxP);
       const hi = Math.max(minP, maxP);
-      if (lo > 0 || hi < 100000) {
+      if (lo > 0 || hi < 10000000) {
         chips.push(`<span class="filter-chip" onclick="resetPrice()">₹${lo.toLocaleString('en-IN')} – ₹${hi.toLocaleString('en-IN')} ✕</span>`);
       }
 
@@ -1022,7 +1017,7 @@
     }
     function resetPrice() {
       document.getElementById('minPrice').value = 0;
-      document.getElementById('maxPrice').value = 100000;
+      document.getElementById('maxPrice').value = 10000000;
       updatePriceFilter();
     }
     function resetDiscounts() {
