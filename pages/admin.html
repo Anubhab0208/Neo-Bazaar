@@ -387,6 +387,9 @@ async function loadAdminProducts() {
   try {
     const res = await fetch(`${API_BASE}/products`);
     const products = await res.json();
+    
+    // Store for category edit modal
+    window.adminProducts = products;
 
     if (!products.length) {
       container.innerHTML = '<p class="text-gray-400 col-span-full text-center py-8">No products yet</p>';
@@ -406,11 +409,16 @@ async function loadAdminProducts() {
         </div>
         <p class="font-bold text-white">${escapeHtml(p.name)}</p>
         <p class="text-sm text-gray-400">${escapeHtml(p.brand || 'N/A')}</p>
-        ${p.categories?.length ? `<p class="text-xs text-violet-400 mt-1">${p.categories.length} categor${p.categories.length === 1 ? 'y' : 'ies'}</p>` : ''}
+        ${p.categories?.length ? `<div class="flex flex-wrap gap-1 mt-1">${p.categories.map(c => { const cat = typeof c === 'object' ? c : {name: c}; const selectedSubs = p.selectedSubcategories || []; const catSubs = selectedSubs.filter(s => s.startsWith(cat.name + ':')); return `<span class="text-[10px] px-2 py-0.5 bg-violet-500/30 text-violet-300 rounded">${cat.name}${catSubs.length ? ': ' + catSubs.map(s => s.split(':')[1]).join(', ') : ''}</span>`; }).join('')}</div>` : '<p class="text-xs text-gray-500 mt-1">No categories</p>'}
         <p class="text-green-400 font-bold mt-2">₹${Number(p.price).toLocaleString()}</p>
-        <button class="delete-btn bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded w-full mt-3 transition" data-id="${p._id}">
-           Delete
-        </button>
+        <div class="flex gap-2 mt-3">
+          <button class="edit-cat-btn flex-1 bg-violet-600 hover:bg-violet-700 text-white px-3 py-2 rounded text-sm transition" data-id="${p._id}">
+            ✏️ Edit
+          </button>
+          <button class="delete-btn flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition" data-id="${p._id}">
+            Delete
+          </button>
+        </div>
       </div>
     `).join('');
 
@@ -423,6 +431,12 @@ async function loadAdminProducts() {
         });
         if (res.ok) loadAdminProducts();
         else alert('Delete failed');
+      };
+    });
+
+    document.querySelectorAll('.edit-cat-btn').forEach(btn => {
+      btn.onclick = async () => {
+        await openCategoryEditModal(btn.dataset.id);
       };
     });
   } catch {
@@ -681,6 +695,288 @@ function openCategoryManager() {
 document.addEventListener('click', (e) => {
   const search = document.getElementById('categorySearch');
   const dropdown = document.getElementById('categoryDropdown');
+  if (search && dropdown && !search.contains(e.target) && !dropdown.contains(e.target)) {
+    dropdown.classList.add('hidden');
+  }
+});
+
+/* =============================================
+   PRODUCT CATEGORY EDITING (via Modal)
+   ============================================= */
+let currentEditProductId = null;
+let currentEditCategories = [];
+let selectedEditSubcategories = [];
+
+// Open category edit modal for existing product
+async function openCategoryEditModal(productId) {
+  const product = window.adminProducts?.find(p => p._id === productId);
+  if (!product) {
+    // Try to fetch from server
+    try {
+      const res = await fetch(`${API_BASE}/products`);
+      const products = await res.json();
+      window.adminProducts = products;
+      product = products.find(p => p._id === productId);
+    } catch {
+      alert('Failed to load product details');
+      return;
+    }
+  }
+  if (!product) {
+    alert('Product not found');
+    return;
+  }
+  
+  currentEditProductId = productId;
+  selectedEditSubcategories = [];
+  document.getElementById('editProductName').textContent = product.name;
+  
+  // Ensure categories are loaded
+  if (allCategories.length === 0) {
+    await loadCategories();
+  }
+  
+  // Set current categories (populate from product data)
+  currentEditCategories = product.categories || [];
+  renderCurrentCategories();
+  
+  // Show subcategories if categories exist
+  if (currentEditCategories.length > 0) {
+    showEditSubcategories(currentEditCategories[0]._id || currentEditCategories[0]);
+  }
+  
+  document.getElementById('categoryEditModal').classList.remove('hidden');
+  document.getElementById('categoryEditModal').classList.add('flex');
+}
+
+function closeCategoryEditModal() {
+  document.getElementById('categoryEditModal').classList.add('hidden');
+  document.getElementById('categoryEditModal').classList.remove('flex');
+  currentEditProductId = null;
+  currentEditCategories = [];
+  selectedEditSubcategories = [];
+  document.getElementById('editCategorySearch').value = '';
+  document.getElementById('editCategoryDropdown').classList.add('hidden');
+  document.getElementById('editSubcategorySection').classList.add('hidden');
+}
+
+function showEditSubcategories(categoryId) {
+  const category = allCategories.find(cat => cat._id.toString() === categoryId.toString());
+  if (!category) {
+    console.log("Category not found:", categoryId, allCategories);
+    return;
+  }
+  
+  const section = document.getElementById('editSubcategorySection');
+  const list = document.getElementById('editSubcategoryList');
+  
+  if (!category.subcategories || category.subcategories.length === 0) {
+    list.innerHTML = '<span class="text-gray-500 text-sm">No subcategories yet</span>';
+  } else {
+    list.innerHTML = category.subcategories.map(sub => {
+      const isSelected = selectedEditSubcategories.includes(categoryId + ':' + sub);
+      return `
+        <label class="inline-flex items-center gap-2 px-3 py-2 bg-gray-700 rounded cursor-pointer hover:bg-gray-600">
+          <input type="checkbox" 
+                 ${isSelected ? 'checked' : ''} 
+                 onchange="toggleEditSubcategory('${categoryId}', '${sub}', this.checked)"
+                 class="rounded">
+          <span class="text-sm text-white">${sub}</span>
+        </label>
+      `;
+    }).join('');
+  }
+  
+  section.classList.remove('hidden');
+}
+
+function toggleEditSubcategory(categoryId, subcategory, checked) {
+  const key = categoryId + ':' + subcategory;
+  if (checked) {
+    if (!selectedEditSubcategories.includes(key)) {
+      selectedEditSubcategories.push(key);
+    }
+  } else {
+    selectedEditSubcategories = selectedEditSubcategories.filter(s => s !== key);
+  }
+}
+
+async function addSubcategoryToEdit() {
+  const input = document.getElementById('newSubcategoryInput');
+  const subcategoryName = input.value.trim();
+  if (!subcategoryName) return;
+  
+  if (currentEditCategories.length === 0) {
+    alert('Please add a category first');
+    return;
+  }
+  
+  // Add to the first selected category
+  const categoryId = currentEditCategories[0]._id || currentEditCategories[0];
+  
+  try {
+    const res = await fetch(`${API_BASE}/categories/${categoryId}/subcategories`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ subcategory: subcategoryName })
+    });
+    
+    if (res.ok) {
+      // Reload categories and refresh display
+      await loadCategories();
+      showEditSubcategories(categoryId);
+      // Auto-select the new subcategory
+      toggleEditSubcategory(categoryId, subcategoryName, true);
+      input.value = '';
+    }
+  } catch (err) {
+    console.error("Failed to add subcategory:", err);
+    alert("Failed to add subcategory");
+  }
+}
+
+function renderCurrentCategories() {
+  const container = document.getElementById('currentCategoriesList');
+  if (!currentEditCategories.length) {
+    container.innerHTML = '<span class="text-gray-500 text-sm">No categories assigned</span>';
+    return;
+  }
+  
+  container.innerHTML = currentEditCategories.map(cat => {
+    const catName = typeof cat === 'object' ? cat.name : cat;
+    const catId = typeof cat === 'object' ? cat._id : cat;
+    return `
+      <span class="inline-flex items-center gap-1 px-3 py-1 bg-violet-600 text-white rounded-full text-sm">
+        ${catName}
+        <button onclick="removeProductCategory('${catId}')" class="hover:text-red-200">×</button>
+      </span>
+    `;
+  }).join('');
+}
+
+function removeProductCategory(catId) {
+  currentEditCategories = currentEditCategories.filter(c => {
+    const id = typeof c === 'object' ? c._id : c;
+    return id !== catId;
+  });
+  renderCurrentCategories();
+}
+
+function searchEditCategories(query) {
+  const dropdown = document.getElementById('editCategoryDropdown');
+  if (!query.trim()) {
+    dropdown.classList.add('hidden');
+    return;
+  }
+  
+  const existingIds = currentEditCategories.map(c => typeof c === 'object' ? c._id : c);
+  const filtered = allCategories.filter(cat => 
+    cat.name.toLowerCase().includes(query.toLowerCase()) &&
+    !existingIds.includes(cat._id)
+  );
+  
+  const exactMatch = allCategories.find(cat => cat.name.toLowerCase() === query.toLowerCase());
+  
+  let html = filtered.map(cat => `
+    <div class="p-3 hover:bg-gray-700 cursor-pointer" onclick="addCategoryToProduct('${cat._id}', '${cat.name}')">
+      ${cat.name}
+    </div>
+  `).join('');
+  
+  if (!exactMatch && query.trim()) {
+    html += `
+      <div class="p-3 hover:bg-gray-700 cursor-pointer border-t border-gray-600" onclick="createAndAddCategory('${query.trim()}')">
+        <span class="text-green-400">+ Create "${query.trim()}"</span>
+      </div>
+    `;
+  }
+  
+  dropdown.innerHTML = html || '<div class="p-3 text-gray-500">No categories found</div>';
+  dropdown.classList.remove('hidden');
+}
+
+function addCategoryToProduct(catId, catName) {
+  if (!currentEditCategories.find(c => (typeof c === 'object' ? c._id : c) === catId)) {
+    currentEditCategories.push({ _id: catId, name: catName });
+    renderCurrentCategories();
+    // Show subcategories for the newly added category
+    showEditSubcategories(catId);
+  }
+  document.getElementById('editCategorySearch').value = '';
+  document.getElementById('editCategoryDropdown').classList.add('hidden');
+}
+
+async function createAndAddCategory(name) {
+  try {
+    const res = await fetch(`${API_BASE}/categories`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ name, subcategories: [] })
+    });
+    
+    const data = await res.json();
+    if (data.success) {
+      allCategories.push(data.category);
+      addCategoryToProduct(data.category._id, data.category.name);
+    } else {
+      alert(data.error || 'Failed to create category');
+    }
+  } catch {
+    alert('Failed to create category');
+  }
+}
+
+async function saveProductCategories() {
+  if (!currentEditProductId) {
+    console.error("No product ID set");
+    return;
+  }
+  
+  // Extract just the category IDs (strings)
+  const categoryIds = currentEditCategories.map(c => {
+    const id = typeof c === 'object' ? c._id : c;
+    return id.toString();
+  });
+  
+  // Build selectedSubcategories array (format: "CategoryName:SubcategoryName")
+  const selectedSubcategories = selectedEditSubcategories.map(key => {
+    const [catId, subName] = key.split(':');
+    const cat = allCategories.find(c => c._id.toString() === catId);
+    return cat ? `${cat.name}:${subName}` : key;
+  });
+  
+  console.log("Saving for product", currentEditProductId, { categoryIds, selectedSubcategories });
+  
+  try {
+    const res = await fetch(`${API_BASE}/products/${currentEditProductId}/categories`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ categories: categoryIds, selectedSubcategories })
+    });
+    
+    console.log("Response status:", res.status);
+    
+    if (res.ok) {
+      const data = await res.json();
+      console.log("Success:", data);
+      await loadAdminProducts();
+      closeCategoryEditModal();
+      alert('Categories updated successfully!');
+    } else {
+      const error = await res.json();
+      console.error("Failed:", error);
+      alert('Failed to update categories: ' + (error.error || 'Unknown error'));
+    }
+  } catch (err) {
+    console.error("Network/JS error:", err);
+    alert('Failed to update categories - check console for details');
+  }
+}
+
+// Close edit dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  const search = document.getElementById('editCategorySearch');
+  const dropdown = document.getElementById('editCategoryDropdown');
   if (search && dropdown && !search.contains(e.target) && !dropdown.contains(e.target)) {
     dropdown.classList.add('hidden');
   }
@@ -1117,6 +1413,65 @@ function initApp() {
 
 initApp();
 </script>
+
+<!-- CATEGORY EDIT MODAL -->
+<div id="categoryEditModal" class="fixed inset-0 z-[300] hidden items-center justify-center bg-black/70 backdrop-blur-sm">
+  <div class="bg-gray-800 border border-gray-600 rounded-2xl p-6 w-full max-w-md mx-4 relative max-h-[80vh] overflow-y-auto">
+    <button onclick="closeCategoryEditModal()" class="absolute top-4 right-5 text-gray-400 hover:text-white text-xl">✕</button>
+    <h2 class="text-2xl font-bold mb-4 text-violet-400">Edit Product Categories</h2>
+    <p id="editProductName" class="text-gray-300 text-sm mb-4"></p>
+    
+    <!-- Current Categories -->
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-300 mb-2">Current Categories</label>
+      <div id="currentCategoriesList" class="flex flex-wrap gap-2 mb-2">
+        <!-- Current categories will appear here -->
+      </div>
+    </div>
+    
+    <!-- Add Category -->
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-300 mb-2">Add Category</label>
+      <div class="relative">
+        <input 
+          id="editCategorySearch" 
+          type="text" 
+          class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-violet-500"
+          placeholder="Search or type new category..."
+          oninput="searchEditCategories(this.value)"
+        >
+        <div id="editCategoryDropdown" class="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg max-h-40 overflow-y-auto hidden">
+          <!-- Category suggestions -->
+        </div>
+      </div>
+    </div>
+    
+    <!-- Subcategories Section -->
+    <div id="editSubcategorySection" class="mb-4 hidden">
+      <label class="block text-sm font-medium text-gray-300 mb-2">Subcategories (select or add new)</label>
+      <div id="editSubcategoryList" class="flex flex-wrap gap-2 mb-2">
+        <!-- Subcategory checkboxes will appear here -->
+      </div>
+      <div class="flex gap-2">
+        <input 
+          id="newSubcategoryInput" 
+          type="text" 
+          class="flex-1 bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-violet-500"
+          placeholder="Add new subcategory..."
+          onkeypress="if(event.key==='Enter')addSubcategoryToEdit()"
+        >
+        <button onclick="addSubcategoryToEdit()" class="bg-violet-600 hover:bg-violet-700 text-white px-3 py-2 rounded-lg text-sm">+ Add</button>
+      </div>
+    </div>
+    
+    <p id="editCategoryMsg" class="text-xs text-center mb-4 hidden"></p>
+    
+    <div class="flex gap-3">
+      <button onclick="closeCategoryEditModal()" class="flex-1 py-3 rounded-lg font-bold text-sm bg-gray-700 hover:bg-gray-600 transition">Cancel</button>
+      <button onclick="saveProductCategories()" class="flex-1 bg-violet-600 hover:bg-violet-700 text-white py-3 rounded-lg font-bold text-sm transition">Save Changes</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>

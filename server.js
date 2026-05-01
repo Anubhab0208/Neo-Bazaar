@@ -84,7 +84,8 @@ const productSchema = new mongoose.Schema({
   discount: Number,
   brand: String,
   image: String,
-  categories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }]
+  categories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }],
+  selectedSubcategories: [{ type: String }]  // Stores selected subcategory names per product
 }, { timestamps: true });
 
 const Product = mongoose.model("Product", productSchema);
@@ -285,13 +286,18 @@ app.post("/api/admin/login", async (req, res) => {
   }
 });
 
+// ADMIN VERIFY ENDPOINT (for checking if user is admin)
+app.get("/api/admin/verify", adminAuth, async (req, res) => {
+  res.json({ success: true, admin: req.admin });
+});
+
 /* =========================
    PRODUCTS
 ========================= */
 
 // GET ALL PRODUCTS
 app.get("/api/products", async (req, res) => {
-  const products = await Product.find();
+  const products = await Product.find().populate('categories', 'name subcategories');
   res.json(products);
 });
 
@@ -339,6 +345,21 @@ app.get("/api/products/newest", async (req, res) => {
     res.json(products);
   } catch {
     res.status(500).json([]);
+  }
+});
+
+// UPDATE PRODUCT CATEGORIES (Admin only)
+app.put("/api/products/:id/categories", adminAuth, async (req, res) => {
+  try {
+    const { categories, selectedSubcategories } = req.body;
+    const updateData = { categories: categories || [] };
+    if (selectedSubcategories !== undefined) {
+      updateData.selectedSubcategories = selectedSubcategories;
+    }
+    await Product.findByIdAndUpdate(req.params.id, updateData);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
