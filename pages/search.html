@@ -377,16 +377,16 @@
         id="navSearchInput"
         type="text"
         placeholder="Search Neo-Bazaar..."
-        class="search-input rounded-full py-2 pl-10 pr-9 text-sm w-full"
+        class="search-input rounded-full py-2 pl-10 pr-20 text-sm w-full"
         onkeydown="if(event.key==='Enter') triggerSearch()"
         oninput="document.getElementById('clearSearchBtn').style.display=this.value?'flex':'none'"
       >
       <button id="clearSearchBtn" onclick="clearSearchInput()" title="Clear search"
-        style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);
+        style="display:none;position:absolute;right:70px;top:50%;transform:translateY(-50%);
                background:rgba(255,255,255,0.15);border:none;color:var(--text-secondary);
                width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:11px;
                align-items:center;justify-content:center;line-height:1;padding:0;">✕</button>
-      <button onclick="triggerSearch()" class="btn-primary px-5 py-2 rounded-full text-sm shrink-0">Search</button>
+      <button onclick="triggerSearch()" class="btn-primary px-4 py-2 rounded-full text-sm">Search</button>
     </div>
 
     <div class="ml-auto flex items-center gap-3">
@@ -446,16 +446,16 @@
             <div class="filter-title">Price Range</div>
             <div class="flex justify-between text-xs mb-2" style="color:var(--text-secondary)">
               <span>₹<span id="minPriceLabel">0</span></span>
-              <span>₹<span id="maxPriceLabel">10000000</span></span>
+              <span>₹<span id="maxPriceLabel">10000000000</span></span>
             </div>
             <div class="range-wrap mb-1">
-              <input type="range" id="minPrice" min="0" max="10000000" step="1000" value="0" oninput="updatePriceFilter()">
+              <input type="range" id="minPrice" min="0" max="10000000000" step="10000" value="0" oninput="updatePriceFilter()">
             </div>
             <div class="range-wrap">
-              <input type="range" id="maxPrice" min="0" max="10000000" step="1000" value="10000000" oninput="updatePriceFilter()">
+              <input type="range" id="maxPrice" min="0" max="10000000000" step="10000" value="10000000000" oninput="updatePriceFilter()">
             </div>
             <div class="text-xs mt-2 text-center" style="color:var(--text-muted)">
-              Showing: ₹<span id="priceRangeDisplay">0 – ₹1,00,00,000</span>
+              Showing: ₹<span id="priceRangeDisplay">0 – ₹10,00,00,00,000</span>
             </div>
           </div>
 
@@ -628,7 +628,6 @@
 
       // Load categories and products
       await Promise.all([loadCategories(), loadProducts()]);
-
       // Apply category from URL
       if (params.catId) {
         currentCategoryId = params.catId;
@@ -663,8 +662,11 @@
     let flashProducts = []; // pre-fetched from server: discount >= 50%, both collections
 
     async function loadProducts() {
-      const grid = document.getElementById('productGrid');
-      grid.innerHTML = buildSkeletons(8);
+      // Only show skeletons on first load
+      if (allProducts.length === 0) {
+        const grid = document.getElementById('productGrid');
+        grid.innerHTML = buildSkeletons(8);
+      }
       try {
         const [res, featRes] = await Promise.all([
           fetch(`${BASE}/api/products`),
@@ -742,18 +744,23 @@
        SEARCH TRIGGER
     ════════════════════════════════════════ */
     function triggerSearch() {
-      const q = document.getElementById('navSearchInput').value.trim();
+      const input = document.getElementById('navSearchInput');
+      const q = input ? input.value.trim() : '';
+      console.log('triggerSearch called with:', q);
       currentQuery = q;
       pageMode = 'search';
       // Show/hide clear button
-      document.getElementById('clearSearchBtn').style.display = q ? 'flex' : 'none';
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (clearBtn) clearBtn.style.display = q ? 'flex' : 'none';
       setPageHeader();
+      console.log('Calling applyFilters with query:', q);
+      // Call applyFilters synchronously with the query we just set
       applyFilters();
-      // Update URL
+      // Update URL after filtering (don't let URL change trigger re-init)
       const url = new URL(window.location);
       url.searchParams.set('q', q);
       url.searchParams.set('mode', 'search');
-      window.history.pushState({}, '', url);
+      window.history.replaceState({}, '', url);
     }
 
     function clearSearchInput() {
@@ -766,7 +773,7 @@
       const url = new URL(window.location);
       url.searchParams.delete('q');
       url.searchParams.set('mode', 'search');
-      window.history.pushState({}, '', url);
+      window.history.replaceState({}, '', url);
     }
 
     /* ════════════════════════════════════════
@@ -786,12 +793,20 @@
         h.innerHTML = `
           <h1 class="heading text-2xl font-bold">Results for <span class="grad-text">"${escHtml(currentQuery)}"</span></h1>`;
       } else {
-        h.innerHTML = `
-          <div style="text-align:center;padding:60px 20px">
-            <div style="font-size:56px;margin-bottom:16px">🔍</div>
-            <h2 class="heading text-2xl font-bold" style="color:var(--text-secondary)">What are you looking for?</h2>
-            <p class="text-sm mt-2" style="color:var(--text-muted)">Type something in the search bar above to find products</p>
-          </div>`;
+        // Check if discount filters are active
+        const hasDiscountFilter = [...document.querySelectorAll('input[id^="disc"]:checked')].length > 0 || document.getElementById('hasDiscount').checked;
+        if (hasDiscountFilter) {
+          h.innerHTML = `
+            <h1 class="heading text-2xl font-bold">Discounted <span class="grad-text">Products</span></h1>
+            <p class="text-sm mt-1" style="color:var(--text-muted)">Showing products with selected discount levels</p>`;
+        } else {
+          h.innerHTML = `
+            <div style="text-align:center;padding:60px 20px">
+              <div style="font-size:56px;margin-bottom:16px">🔍</div>
+              <h2 class="heading text-2xl font-bold" style="color:var(--text-secondary)">What are you looking for?</h2>
+              <p class="text-sm mt-2" style="color:var(--text-muted)">Type something in the search bar above to find products</p>
+            </div>`;
+        }
       }
     }
 
@@ -812,9 +827,11 @@
     /* ════════════════════════════════════════
        CORE FILTER + SORT
     ════════════════════════════════════════ */
+    let filterCallCount = 0;
     function applyFilters() {
-      // Show empty prompt if search mode and no query
-      if (pageMode === 'search' && !currentQuery && currentCategory === 'all') {
+      // Show empty prompt only if no filters at all (no query, no category, no discounts checked)
+      const hasDiscountFilter = [...document.querySelectorAll('input[id^="disc"]:checked')].length > 0 || document.getElementById('hasDiscount').checked;
+      if (pageMode === 'search' && !currentQuery && currentCategory === 'all' && !hasDiscountFilter) {
         document.getElementById('productGrid').innerHTML = '';
         document.getElementById('resultsCount').innerHTML = '';
         document.getElementById('activeChips').innerHTML = '';
@@ -829,17 +846,21 @@
         results = [...flashProducts];
       }
 
-      // --- Query filter ---
+      // --- Query filter: name, category tags, subcategory tags ---
       if (currentQuery) {
         const q = currentQuery.toLowerCase();
-        results = results.filter(p =>
-          (p.name && p.name.toLowerCase().includes(q)) ||
-          (p.brand && p.brand.toLowerCase().includes(q)) ||
-          (p.categories && p.categories.some(c => {
-            const n = typeof c === 'object' ? c.name : c;
-            return n && n.toLowerCase().includes(q);
-          }))
-        );
+        results = results.filter(p => {
+          const matchName = p.name && p.name.toLowerCase().includes(q);
+          const matchCategory = p.categories && p.categories.some(c => {
+            const catName = typeof c === 'object' ? c.name : c;
+            return catName && catName.toLowerCase().includes(q);
+          });
+          const matchSubtag = p.selectedSubcategories && p.selectedSubcategories.some(tag => {
+            const tagStr = typeof tag === 'string' ? tag.toLowerCase() : '';
+            return tagStr.includes(q);
+          });
+          return matchName || matchCategory || matchSubtag;
+        });
       }
 
       // --- Category filter ---
@@ -884,7 +905,7 @@
       // --- Discount checkboxes ---
       const discChecked = [...document.querySelectorAll('input[id^="disc"]:checked')].map(c => parseInt(c.value));
       if (discChecked.length > 0) {
-        const minDisc = Math.max(...discChecked);
+        const minDisc = Math.min(...discChecked); // Use MIN for OR logic (show if >= any selected)
         results = results.filter(p => p.discount && p.discount >= minDisc);
       }
 
@@ -975,7 +996,7 @@
       const maxP = parseInt(document.getElementById('maxPrice').value);
       const lo = Math.min(minP, maxP);
       const hi = Math.max(minP, maxP);
-      if (lo > 0 || hi < 10000000) {
+      if (lo > 0 || hi < 10000000000) {
         chips.push(`<span class="filter-chip" onclick="resetPrice()">₹${lo.toLocaleString('en-IN')} – ₹${hi.toLocaleString('en-IN')} ✕</span>`);
       }
 
@@ -1022,7 +1043,7 @@
     }
     function resetPrice() {
       document.getElementById('minPrice').value = 0;
-      document.getElementById('maxPrice').value = 10000000;
+      document.getElementById('maxPrice').value = 10000000000;
       updatePriceFilter();
     }
     function resetDiscounts() {
