@@ -178,6 +178,13 @@
       color: var(--text-primary);
     }
   </style>
+  <script>
+    // Inherit persisted theme before render to prevent flash
+    (function() {
+      const t = localStorage.getItem('nb-theme') || 'dark';
+      document.documentElement.dataset.theme = t;
+    })();
+  </script>
 </head>
 
 <body>
@@ -196,9 +203,9 @@
     </div>
     <div class="ml-auto flex items-center gap-4">
       <div class="relative hidden sm:block flex items-center">
-        <input type="text" placeholder="Search the bazaar..." class="glass rounded-full py-1.5 pl-10 pr-4 text-sm focus:outline-none w-64">
+        <input type="text" id="navSearch" placeholder="Search the bazaar..." class="glass rounded-full py-1.5 pl-10 pr-4 text-sm focus:outline-none w-64" onkeydown="if(event.key==='Enter') goSearch()">
         <span class="absolute left-4 top-1.5">🔍</span>
-        <button class="btn-primary ml-2 px-4 py-1.5 rounded-full text-sm">Search</button>
+        <button onclick="goSearch()" class="btn-primary ml-2 px-4 py-1.5 rounded-full text-sm">Search</button>
       </div>
       <!-- DARK MODE -->
       <button onclick="toggleTheme()" class="glass px-3 py-1 rounded-full text-sm">🌗</button>
@@ -236,20 +243,20 @@
     </div>
   </nav>
 
-  <!-- CATEGORY BAR -->
-  <div class="sticky top-16 z-50 bg-black/10 backdrop-blur border-b border-white/10 px-6 py-3 flex gap-6 overflow-x-auto text-sm">
-    <div class="flex items-center gap-2 whitespace-nowrap cursor-pointer hover:text-orange-400">🔥 For You</div>
-    <div class="flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer hover:text-orange-400">👕 Men</div>
-    <div class="flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer hover:text-orange-400">👗 Women</div>
-    <div class="flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer hover:text-orange-400">📱 Electronics</div>
-    <div class="flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer hover:text-orange-400">🏠 Home</div>
-    <div class="flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer hover:text-orange-400">🎮 Gaming</div>
-    <div class="flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer hover:text-orange-400">💄 Beauty</div>
-    <div class="flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer hover:text-orange-400">👟 Sneakers</div>
-    <div class="flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer hover:text-orange-400">👜 Accessories</div>
-    <div class="flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer hover:text-orange-400">📚 Books</div>
-    <div class="flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer hover:text-orange-400">⌚ Gadgets</div>
-    <div class="flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer hover:text-orange-400">🖥️ Tech</div>
+  <!-- CATEGORY BAR — wired to search page -->
+  <div class="sticky top-16 z-50 bg-black/10 backdrop-blur border-b border-white/10 px-6 py-3 flex gap-6 overflow-x-auto text-sm" id="homeCatBar">
+    <div class="flex items-center gap-2 whitespace-nowrap cursor-pointer hover:text-orange-400" onclick="window.location.href='pages/search.html?mode=explore'">🔥 For You</div>
+    <div class="flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer hover:text-orange-400" onclick="goCat('Men')">👕 Men</div>
+    <div class="flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer hover:text-orange-400" onclick="goCat('Women')">👗 Women</div>
+    <div class="flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer hover:text-orange-400" onclick="goCat('Electronics')">📱 Electronics</div>
+    <div class="flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer hover:text-orange-400" onclick="goCat('Home')">🏠 Home</div>
+    <div class="flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer hover:text-orange-400" onclick="goCat('Gaming')">🎮 Gaming</div>
+    <div class="flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer hover:text-orange-400" onclick="goCat('Beauty')">💄 Beauty</div>
+    <div class="flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer hover:text-orange-400" onclick="goCat('Sneakers')">👟 Sneakers</div>
+    <div class="flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer hover:text-orange-400" onclick="goCat('Accessories')">👜 Accessories</div>
+    <div class="flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer hover:text-orange-400" onclick="goCat('Books')">📚 Books</div>
+    <div class="flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer hover:text-orange-400" onclick="goCat('Gadgets')">⌚ Gadgets</div>
+    <div class="flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer hover:text-orange-400" onclick="goCat('Tech')">🖥️ Tech</div>
   </div>
 
   <!-- HERO -->
@@ -261,8 +268,8 @@
       </h1>
       <p class="text-gray-400 text-lg mb-8 max-w-md">Your hyper-curated marketplace for digital-age essentials and exclusive drops.</p>
       <div class="flex gap-4">
-        <button class="btn-primary px-8 py-4 rounded-xl font-bold">Start Exploring</button>
-        <button class="glass px-8 py-4 rounded-xl font-bold hover:bg-white/10 transition">Flash Deals</button>
+        <button onclick="window.location.href='pages/search.html?mode=explore'" class="btn-primary px-8 py-4 rounded-xl font-bold">Start Exploring</button>
+        <button onclick="window.location.href='pages/search.html?mode=flash'" class="glass px-8 py-4 rounded-xl font-bold hover:bg-white/10 transition">Flash Deals</button>
       </div>
     </div>
     <div class="relative group flex justify-center items-center">
@@ -609,17 +616,16 @@
           track.innerHTML = '<p class="text-gray-400 px-6">No deals right now. Check back soon!</p>';
           return;
         }
-        // Sort: first by discount desc, then by newest (createdAt desc)
-        const sorted = [...data].sort((a, b) => {
-          const da = a.discount || 0;
-          const db = b.discount || 0;
-          if (db !== da) return db - da;
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        });
+        const discounted = data.filter(p => p.discount && p.discount > 0);
+        const sorted = discounted.sort((a, b) => (b.discount || 0) - (a.discount || 0));
+        if (!sorted.length) {
+          track.innerHTML = '<p class="text-gray-400 px-6">No deals right now. Check back soon!</p>';
+          return;
+        }
         // Take top 8 (or all if fewer)
         const picks = sorted.slice(0, Math.min(8, sorted.length));
         const cardHTML = picks.map(p => {
-          const discLabel = p.discount ? `<div class="text-xs bg-orange-500/20 text-orange-500 px-2 py-0.5 rounded inline-block mb-2 font-bold">${p.discount}% OFF</div>` : `<div class="text-xs bg-violet-500/20 text-violet-400 px-2 py-0.5 rounded inline-block mb-2 font-bold">NEW</div>`;
+          const discLabel = `<div class="text-xs bg-orange-500/20 text-orange-500 px-2 py-0.5 rounded inline-block mb-2 font-bold">${p.discount}% OFF</div>`;
           return `
             <div class="glass p-6 rounded-3xl min-w-[260px] flex flex-col items-center gap-3 hover:bg-white/10 transition">
               <div class="h-24 w-full flex items-center justify-center overflow-hidden">
@@ -779,7 +785,16 @@
     }
     function toggleTheme() {
       const html = document.documentElement;
-      html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark';
+      const next = html.dataset.theme === 'dark' ? 'light' : 'dark';
+      html.dataset.theme = next;
+      localStorage.setItem('nb-theme', next);
+    }
+    function goSearch() {
+      const q = document.getElementById('navSearch').value.trim();
+      if (q) window.location.href = `pages/search.html?q=${encodeURIComponent(q)}&mode=search`;
+    }
+    function goCat(catName) {
+      window.location.href = `pages/search.html?cat=${encodeURIComponent(catName)}&mode=search`;
     }
 
     /* ══════════════════════════════════════
