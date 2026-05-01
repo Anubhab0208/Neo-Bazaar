@@ -129,7 +129,8 @@ const Admin = mongoose.model("Admin", adminSchema);
 // COMPLAINT
 const complaintSchema = new mongoose.Schema({
   email: String,
-  message: String
+  message: String,
+  resolved: { type: Boolean, default: false }
 }, { timestamps: true });
 
 const Complaint = mongoose.model("Complaint", complaintSchema);
@@ -208,16 +209,27 @@ app.post("/api/register", async (req, res) => {
   try {
     const { email, password, username } = req.body;
 
+    if (!email || !password || !username) {
+      return res.status(400).json({ success: false, message: "All fields required" });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ success: false, message: "Password must be 6+ characters" });
+    }
+
     const hashed = await bcrypt.hash(password, 10);
 
     const user = new User({ email, password: hashed, username });
 
     await user.save();
 
-    res.json({ success: true, message: "User created" });
+    res.json({ success: true, message: "User created", user: { email, username, id: user._id } });
 
   } catch (err) {
-    res.json({ success: false, message: "User exists or error" });
+    if (err.code === 11000) {
+      return res.status(400).json({ success: false, message: "Email already registered" });
+    }
+    res.status(500).json({ success: false, message: "Registration failed" });
   }
 });
 
@@ -239,7 +251,7 @@ app.post("/api/login", async (req, res) => {
 
   res.json({
     success: true,
-    user: { email: user.email, username: user.username }  // ← add username
+    user: { email: user.email, username: user.username, id: user._id }
   });
 });
 /* =========================
@@ -266,7 +278,7 @@ app.post("/api/admin/login", async (req, res) => {
       { expiresIn: "24h" }
     );
 
-    res.json({ success: true, token });
+    res.json({ success: true, token, redirectUrl: '/admin' });
   } catch (err) {
     console.error("Admin login error:", err);
     res.status(500).json({ success: false, message: "Server error" });
@@ -285,13 +297,10 @@ app.get("/api/products", async (req, res) => {
 
 // ADMIN ADD PRODUCT
 app.post("/api/products", adminAuth, async(req,res)=>{
-  console.log("POST /api/products received");
-  console.log("Body:", req.body);
   try{
     const {name,brand,price,image,originalPrice,discount,categories} = req.body;
 
     if(!name || !brand || !price || !image){
-      console.log("Missing fields - name:", name, "brand:", brand, "price:", price, "image:", image);
       return res.status(400).json({success:false, message: "Missing required fields"});
     }
 
@@ -305,8 +314,7 @@ app.post("/api/products", adminAuth, async(req,res)=>{
       categories: categories || []
     });
     
-    console.log("Product created:", product._id);
-    res.json({success:true});
+    res.json({success:true, productId: product._id});
 
   }catch(err){
     console.error("Add product error:", err);
@@ -386,18 +394,6 @@ app.delete("/api/featured-products/:id", adminAuth, async (req, res) => {
 app.get("/api/categories", async (req, res) => {
   try {
     const categories = await Category.find().sort({ name: 1 });
-    res.json(categories);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// SEARCH CATEGORIES by name
-app.get("/api/categories/search", async (req, res) => {
-  try {
-    const { q } = req.query;
-    const query = q ? { name: { $regex: q, $options: 'i' } } : {};
-    const categories = await Category.find(query).sort({ name: 1 });
     res.json(categories);
   } catch (err) {
     res.status(500).json({ error: err.message });
