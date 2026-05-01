@@ -660,6 +660,8 @@
     /* ════════════════════════════════════════
        LOAD DATA
     ════════════════════════════════════════ */
+    let flashProducts = []; // pre-fetched from server: discount >= 50%, both collections
+
     async function loadProducts() {
       const grid = document.getElementById('productGrid');
       grid.innerHTML = buildSkeletons(8);
@@ -672,11 +674,15 @@
         const featured = featRes.ok ? await featRes.json().catch(() => []) : [];
         // Tag featured products so we can render them distinctly
         featured.forEach(p => { p._isFeatured = true; });
-        // Merge: featured first, then regular
+        // Merge: featured first, then regular (for explore/search modes)
         allProducts = [...featured, ...regular];
+        // Flash products: filter client-side for discount >= 50% from all products
+        flashProducts = allProducts.filter(p => p.discount && p.discount >= 50)
+                                   .sort((a, b) => (b.discount || 0) - (a.discount || 0));
       } catch(err) {
         console.error('loadProducts error:', err);
         allProducts = [];
+        flashProducts = [];
       }
     }
 
@@ -818,10 +824,9 @@
 
       let results = [...allProducts];
 
-      // --- Mode: Flash = featured products + discounted regular products, highest discount first ---
+      // --- Mode: Flash = use server-pre-filtered list (discount >= 50%, all collections) ---
       if (pageMode === 'flash') {
-        results = results.filter(p => p._isFeatured || (p.discount && p.discount > 0));
-        results.sort((a, b) => (b.discount || 0) - (a.discount || 0));
+        results = [...flashProducts];
       }
 
       // --- Query filter ---

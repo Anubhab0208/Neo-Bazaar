@@ -338,6 +338,21 @@ app.delete("/api/products/:id", adminAuth, async(req,res)=>{
   }
 });
 
+// GET FLASH PRODUCTS (discount >= 50%, from both regular and featured collections)
+app.get("/api/products/flash", async (req, res) => {
+  try {
+    const [regular, featured] = await Promise.all([
+      Product.find({ discount: { $gte: 50 } }).populate('categories', 'name subcategories'),
+      FeaturedProduct.find({ discount: { $gte: 50 } })
+    ]);
+    const featuredTagged = featured.map(p => ({ ...p.toObject(), _isFeatured: true }));
+    const all = [...featuredTagged, ...regular].sort((a, b) => (b.discount || 0) - (a.discount || 0));
+    res.json(all);
+  } catch (err) {
+    res.status(500).json([]);
+  }
+});
+
 // GET NEWEST PRODUCTS (latest 8 by createdAt)
 app.get("/api/products/newest", async (req, res) => {
   try {
