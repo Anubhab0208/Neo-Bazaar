@@ -163,51 +163,76 @@ h1 {
 const container = document.getElementById("orders");
 const BASE = window.location.origin;
 
-async function loadOrder() {
-  const savedOrder = JSON.parse(localStorage.getItem("lastOrder"));
+async function loadOrders() {
+  // Get user email from localStorage
+  const user = JSON.parse(localStorage.getItem("user"));
+  const lastOrder = JSON.parse(localStorage.getItem("lastOrder"));
   
-  if (!savedOrder) {
-    container.innerHTML = `<p class="empty">No orders yet</p>`;
+  // Try to get email from user object or lastOrder
+  const userEmail = user?.email || lastOrder?.email || null;
+  
+  if (!userEmail) {
+    container.innerHTML = `<p class="empty">Please log in to view your orders</p>`;
     return;
   }
 
-  // First render with local data
-  renderOrder(savedOrder);
+  try {
+    // Fetch orders from database by user email (with cache-busting)
+    const res = await fetch(`${BASE}/api/orders/user/${encodeURIComponent(userEmail)}?t=${Date.now()}`, {
+      headers: { 'Cache-Control': 'no-cache' }
+    });
+    
+    if (!res.ok) {
+      throw new Error("Failed to fetch orders");
+    }
+    
+    const orders = await res.json();
+    console.log("Fetched orders:", orders);
+    
+    if (!orders || orders.length === 0) {
+      container.innerHTML = `<p class="empty">No orders yet</p>`;
+      return;
+    }
 
-  // Then fetch fresh data from server
-  if (savedOrder.orderId) {
-    try {
-      const res = await fetch(`${BASE}/api/orders/${savedOrder.orderId}`);
-      if (res.ok) {
-        const freshOrder = await res.json();
-        // Update localStorage with fresh data
-        localStorage.setItem("lastOrder", JSON.stringify({
-          ...savedOrder,
-          status: freshOrder.status,
-          createdAt: freshOrder.createdAt
-        }));
-        // Re-render with fresh status
-        renderOrder({ ...savedOrder, status: freshOrder.status, createdAt: freshOrder.createdAt });
-      }
-    } catch (err) {
-      console.error("Failed to fetch fresh order status:", err);
-      // Keep showing local data if fetch fails
+    // Clear container and render all orders from database
+    container.innerHTML = '';
+    orders.forEach(order => {
+      console.log("Order status:", order._id, order.status);
+      const orderCard = renderOrderCard(order);
+      container.innerHTML += orderCard;
+    });
+    
+  } catch (err) {
+    console.error("Failed to load orders:", err);
+    // Fallback: show lastOrder from localStorage if available
+    if (lastOrder) {
+      container.innerHTML = renderOrderCard(lastOrder);
+    } else {
+      container.innerHTML = `<p class="empty">Failed to load orders. Please try again later.</p>`;
     }
   }
 }
 
-function renderOrder(order) {
-  const orderId = order.orderId ? '#' + order.orderId.substring(0, 8).toUpperCase() : '#NB' + Math.floor(Math.random() * 100000);
+function renderOrderCard(order) {
+  // Handle both database format (_id) and localStorage format (orderId)
+  const id = order._id || order.orderId;
+  const orderId = id ? '#' + id.toString().substring(0, 8).toUpperCase() : '#NB' + Math.floor(Math.random() * 100000);
   const total = Number(order.total || 0).toLocaleString();
-  const status = order.status || 'Placed';
+  const status = (order.status || 'Placed').trim();
   
-  const statusClass = status === 'Delivered' ? 'status-delivered' : 
-                      status === 'Shipped' ? 'status-shipped' : 
-                      status === 'Cancelled' ? 'status-cancelled' : 'status-placed';
+  console.log("Rendering order:", orderId, "Raw status:", order.status, "Processed status:", status);
   
-  const deliveryText = status === 'Placed' ? '📦 Processing' : 
-                       status === 'Shipped' ? '🚚 Out for Delivery' : 
-                       status === 'Delivered' ? '✅ Delivered' : status;
+  const statusLower = status.toLowerCase();
+  const statusClass = statusLower === 'delivered' ? 'status-delivered' : 
+                      statusLower === 'shipped' ? 'status-shipped' : 
+                      statusLower === 'cancelled' || statusLower === 'canceled' ? 'status-cancelled' : 'status-placed';
+  
+  console.log("Status class assigned:", statusClass);
+  
+  const deliveryText = statusLower === 'placed' ? '📦 Processing' : 
+                       statusLower === 'shipped' ? '🚚 Out for Delivery' : 
+                       statusLower === 'delivered' ? '✅ Delivered' : 
+                       statusLower === 'cancelled' || statusLower === 'canceled' ? '❌ Cancelled' : status;
 
   // Payment method and status
   const paymentMethod = order.paymentMethod || 'cod';
@@ -229,7 +254,7 @@ function renderOrder(order) {
     `;
   });
 
-  container.innerHTML = `
+  return `
     <div class="order-card" style="border-left:4px solid var(--purple);">
       <div class="order-header" style="align-items:center;">
         <div>
@@ -270,8 +295,16 @@ function goHome(){
   window.location.href = "../index.html";
 }
 
-// Load order on page load
-loadOrder();
+// Load orders on page load
+loadOrders();
+
+// Auto-refresh when page becomes visible (switching tabs)
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    console.log("Page visible, refreshing orders...");
+    loadOrders();
+  }
+});
 </script>
 
 </body>

@@ -456,16 +456,19 @@ async function loadOrders() {
 
     document.querySelectorAll(".status-select").forEach(select => {
       select.onchange = async () => {
+        console.log("Updating order", select.dataset.id, "to status:", select.value);
         const res = await fetch(`${API_BASE}/orders/${select.dataset.id}/status`, {
           method: "PUT",
           headers: getAuthHeaders(),
           body: JSON.stringify({ status: select.value })
         });
+        const data = await res.json();
+        console.log("Update response:", data);
         if (res.ok) {
-          alert("✅ Order status updated");
+          alert("✅ Order status updated to " + select.value);
           loadOrders();
         } else {
-          alert("Failed to update order status");
+          alert("Failed to update order status: " + (data.error || "Unknown error"));
           loadOrders();
         }
       };

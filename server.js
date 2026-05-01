@@ -425,6 +425,17 @@ app.get("/api/orders/:id", async (req, res) => {
   }
 });
 
+// GET ORDERS BY USER EMAIL (PUBLIC - for users to view their orders)
+app.get("/api/orders/user/:email", async (req, res) => {
+  try {
+    const email = decodeURIComponent(req.params.email);
+    const orders = await Order.find({ "user.email": email }).sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 /* =========================
    GOOGLE DRIVE
 ========================= */

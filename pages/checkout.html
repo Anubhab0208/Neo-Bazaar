@@ -404,17 +404,27 @@
 
       if (!res.ok) throw new Error(data.error || "Order failed");
 
-      // Save order info for success page
-      localStorage.setItem("lastOrder", JSON.stringify({
-          orderId: data._id || data.orderId,
-          items: cart,
-          total,
-          delivery: deliveryCharge,
-          name: orderData.user.name,
-          paymentMethod: selectedPayment,
-          status: data.status || "Placed",
-          createdAt: data.createdAt || new Date().toISOString()
-        }));
+      // Create order object
+      const newOrder = {
+        orderId: data._id || data.orderId,
+        items: cart,
+        total,
+        delivery: deliveryCharge,
+        name: orderData.user.name,
+        email: orderData.user.email,
+        paymentMethod: selectedPayment,
+        status: data.status || "Placed",
+        createdAt: data.createdAt || new Date().toISOString()
+      };
+      
+      // Save to lastOrder (for backward compatibility)
+      localStorage.setItem("lastOrder", JSON.stringify(newOrder));
+      
+      // Save user info for fetching orders
+      localStorage.setItem("user", JSON.stringify({ 
+        email: orderData.user.email, 
+        username: orderData.user.name 
+      }));
 
       // Clear cart
       localStorage.removeItem("cart");
