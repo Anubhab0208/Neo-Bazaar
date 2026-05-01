@@ -193,6 +193,46 @@
               <label class="block text-sm font-medium text-gray-300 mb-2">Image URL</label>
               <input id="prodImage" type="url" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-green-500" placeholder="https://example.com/image.jpg">
             </div>
+            
+            <!-- CATEGORIES SECTION -->
+            <div class="border-t border-gray-600 pt-4 mt-4">
+              <div class="flex items-center justify-between mb-2">
+                <label class="block text-sm font-medium text-gray-300">Categories</label>
+                <button type="button" onclick="openCategoryManager()" class="text-xs text-green-400 hover:text-green-300 underline">Manage Categories</button>
+              </div>
+              
+              <!-- Selected Categories Display -->
+              <div id="selectedCategories" class="flex flex-wrap gap-2 mb-3 min-h-[32px]">
+                <!-- Selected category tags will appear here -->
+              </div>
+              <input type="hidden" id="prodCategories" value="[]">
+              
+              <!-- Category Search -->
+              <div class="relative">
+                <input 
+                  id="categorySearch" 
+                  type="text" 
+                  class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-green-500" 
+                  placeholder="Search or add categories..."
+                  autocomplete="off"
+                  oninput="searchCategories(this.value)"
+                  onfocus="showCategoryDropdown()"
+                >
+                <!-- Category Dropdown -->
+                <div id="categoryDropdown" class="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg max-h-60 overflow-y-auto hidden">
+                  <!-- Categories will be populated here -->
+                </div>
+              </div>
+              
+              <!-- Subcategories for Selected Category -->
+              <div id="subcategorySection" class="mt-3 hidden">
+                <label class="block text-xs font-medium text-gray-400 mb-2">Subcategories (optional)</label>
+                <div id="subcategoryList" class="flex flex-wrap gap-2">
+                  <!-- Subcategory checkboxes will appear here -->
+                </div>
+              </div>
+            </div>
+            
             <button id="addProductBtn" class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-3 rounded-lg transition shadow-lg">
               Add Product
             </button>
@@ -366,6 +406,7 @@ async function loadAdminProducts() {
         </div>
         <p class="font-bold text-white">${escapeHtml(p.name)}</p>
         <p class="text-sm text-gray-400">${escapeHtml(p.brand || 'N/A')}</p>
+        ${p.categories?.length ? `<p class="text-xs text-violet-400 mt-1">${p.categories.length} categor${p.categories.length === 1 ? 'y' : 'ies'}</p>` : ''}
         <p class="text-green-400 font-bold mt-2">₹${Number(p.price).toLocaleString()}</p>
         <button class="delete-btn bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded w-full mt-3 transition" data-id="${p._id}">
            Delete
@@ -389,11 +430,268 @@ async function loadAdminProducts() {
   }
 }
 
+/* =============================================
+   CATEGORY MANAGEMENT
+   ============================================= */
+let allCategories = [];
+let selectedCategoryIds = [];
+let selectedSubcategories = [];
+
+// Load all categories from server
+async function loadCategories() {
+  try {
+    const res = await fetch(`${API_BASE}/categories`);
+    allCategories = await res.json();
+  } catch (err) {
+    console.error("Failed to load categories:", err);
+  }
+}
+
+// Search and filter categories
+function searchCategories(query) {
+  const dropdown = document.getElementById('categoryDropdown');
+  if (!query.trim()) {
+    showCategoryDropdown();
+    return;
+  }
+  
+  const filtered = allCategories.filter(cat => 
+    cat.name.toLowerCase().includes(query.toLowerCase()) &&
+    !selectedCategoryIds.includes(cat._id)
+  );
+  
+  // Also show option to create new category if no match
+  const exactMatch = allCategories.find(cat => cat.name.toLowerCase() === query.toLowerCase());
+  
+  let html = filtered.map(cat => `
+    <div class="p-3 hover:bg-gray-700 cursor-pointer border-b border-gray-700 last:border-0" 
+         onclick="selectCategory('${cat._id}', '${escapeHtml(cat.name)}')">
+      <span class="text-white">${escapeHtml(cat.name)}</span>
+      ${cat.subcategories?.length ? `<span class="text-gray-500 text-xs ml-2">(${cat.subcategories.length} subcategories)</span>` : ''}
+    </div>
+  `).join('');
+  
+  if (!exactMatch && query.trim()) {
+    html += `
+      <div class="p-3 hover:bg-gray-700 cursor-pointer border-t border-gray-600 bg-gray-750" 
+           onclick="createAndSelectCategory('${escapeHtml(query.trim())}')">
+        <span class="text-green-400">+ Create "${escapeHtml(query.trim())}"</span>
+      </div>
+    `;
+  }
+  
+  dropdown.innerHTML = html || '<div class="p-3 text-gray-500">No categories found</div>';
+  dropdown.classList.remove('hidden');
+}
+
+// Show all categories in dropdown
+function showCategoryDropdown() {
+  const dropdown = document.getElementById('categoryDropdown');
+  const available = allCategories.filter(cat => !selectedCategoryIds.includes(cat._id));
+  
+  let html = available.map(cat => `
+    <div class="p-3 hover:bg-gray-700 cursor-pointer border-b border-gray-700 last:border-0" 
+         onclick="selectCategory('${cat._id}', '${escapeHtml(cat.name)}')">
+      <span class="text-white">${escapeHtml(cat.name)}</span>
+      ${cat.subcategories?.length ? `<span class="text-gray-500 text-xs ml-2">(${cat.subcategories.length} subcategories)</span>` : ''}
+    </div>
+  `).join('');
+  
+  if (available.length === 0) {
+    html = '<div class="p-3 text-gray-500">No more categories available</div>';
+  }
+  
+  dropdown.innerHTML = html;
+  dropdown.classList.remove('hidden');
+}
+
+// Select a category
+function selectCategory(id, name) {
+  if (selectedCategoryIds.includes(id)) return;
+  
+  selectedCategoryIds.push(id);
+  updateSelectedCategoriesDisplay();
+  document.getElementById('categorySearch').value = '';
+  document.getElementById('categoryDropdown').classList.add('hidden');
+  
+  // Show subcategories for the selected category
+  showSubcategories(id);
+  
+  // Update hidden input
+  updateCategoriesInput();
+}
+
+// Remove a selected category
+function removeCategory(id) {
+  selectedCategoryIds = selectedCategoryIds.filter(cid => cid !== id);
+  selectedSubcategories = selectedSubcategories.filter(s => !s.startsWith(id + ':'));
+  updateSelectedCategoriesDisplay();
+  updateCategoriesInput();
+  
+  // Hide subcategory section if no categories selected
+  if (selectedCategoryIds.length === 0) {
+    document.getElementById('subcategorySection').classList.add('hidden');
+  } else {
+    // Show subcategories for the last selected category
+    showSubcategories(selectedCategoryIds[selectedCategoryIds.length - 1]);
+  }
+}
+
+// Update the selected categories display
+function updateSelectedCategoriesDisplay() {
+  const container = document.getElementById('selectedCategories');
+  const selectedCats = allCategories.filter(cat => selectedCategoryIds.includes(cat._id));
+  
+  container.innerHTML = selectedCats.map(cat => `
+    <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-600 text-white rounded-full text-sm">
+      ${escapeHtml(cat.name)}
+      <button onclick="removeCategory('${cat._id}')" class="hover:text-red-200">×</button>
+    </span>
+  `).join('');
+}
+
+// Show subcategories for a category
+function showSubcategories(categoryId) {
+  const category = allCategories.find(cat => cat._id === categoryId);
+  if (!category) return;
+  
+  const section = document.getElementById('subcategorySection');
+  const list = document.getElementById('subcategoryList');
+  
+  if (!category.subcategories || category.subcategories.length === 0) {
+    // Show input to add new subcategory
+    list.innerHTML = `
+      <div class="w-full">
+        <input type="text" 
+               id="newSubcategory_${categoryId}" 
+               class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm w-full"
+               placeholder="Add subcategory for ${escapeHtml(category.name)}..."
+               onkeypress="if(event.key==='Enter')addSubcategory('${categoryId}', this.value)">
+        <button onclick="addSubcategory('${categoryId}', document.getElementById('newSubcategory_${categoryId}').value)" 
+                class="mt-2 text-xs text-green-400 hover:text-green-300">+ Add Subcategory</button>
+      </div>
+    `;
+  } else {
+    // Show existing subcategories as checkboxes
+    list.innerHTML = category.subcategories.map(sub => {
+      const isSelected = selectedSubcategories.includes(categoryId + ':' + sub);
+      return `
+        <label class="inline-flex items-center gap-2 px-3 py-2 bg-gray-700 rounded cursor-pointer hover:bg-gray-600">
+          <input type="checkbox" 
+                 ${isSelected ? 'checked' : ''} 
+                 onchange="toggleSubcategory('${categoryId}', '${escapeHtml(sub)}', this.checked)"
+                 class="rounded">
+          <span class="text-sm text-white">${escapeHtml(sub)}</span>
+        </label>
+      `;
+    }).join('') + `
+      <div class="w-full mt-2">
+        <input type="text" 
+               id="newSubcategory_${categoryId}" 
+               class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm w-full"
+               placeholder="Add new subcategory..."
+               onkeypress="if(event.key==='Enter')addSubcategory('${categoryId}', this.value)">
+        <button onclick="addSubcategory('${categoryId}', document.getElementById('newSubcategory_${categoryId}').value)" 
+                class="mt-2 text-xs text-green-400 hover:text-green-300">+ Add New Subcategory</button>
+      </div>
+    `;
+  }
+  
+  section.classList.remove('hidden');
+}
+
+// Toggle subcategory selection
+function toggleSubcategory(categoryId, subcategory, checked) {
+  const key = categoryId + ':' + subcategory;
+  if (checked) {
+    if (!selectedSubcategories.includes(key)) {
+      selectedSubcategories.push(key);
+    }
+  } else {
+    selectedSubcategories = selectedSubcategories.filter(s => s !== key);
+  }
+  updateCategoriesInput();
+}
+
+// Add new subcategory to a category
+async function addSubcategory(categoryId, subcategoryName) {
+  if (!subcategoryName.trim()) return;
+  
+  try {
+    const res = await fetch(`${API_BASE}/categories/${categoryId}/subcategories`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ subcategory: subcategoryName.trim() })
+    });
+    
+    if (res.ok) {
+      // Reload categories and refresh display
+      await loadCategories();
+      showSubcategories(categoryId);
+      // Auto-select the new subcategory
+      toggleSubcategory(categoryId, subcategoryName.trim(), true);
+    }
+  } catch (err) {
+    console.error("Failed to add subcategory:", err);
+    alert("Failed to add subcategory");
+  }
+}
+
+// Create and select a new category
+async function createAndSelectCategory(name) {
+  try {
+    const res = await fetch(`${API_BASE}/categories`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ name: name, subcategories: [] })
+    });
+    
+    const data = await res.json();
+    if (data.success) {
+      await loadCategories();
+      selectCategory(data.category._id, data.category.name);
+    } else {
+      alert(data.error || "Failed to create category");
+    }
+  } catch (err) {
+    console.error("Failed to create category:", err);
+    alert("Failed to create category");
+  }
+}
+
+// Update the hidden input with selected categories
+function updateCategoriesInput() {
+  const categoriesData = selectedCategoryIds.map(id => {
+    const subs = selectedSubcategories
+      .filter(s => s.startsWith(id + ':'))
+      .map(s => s.split(':')[1]);
+    return { id, subcategories: subs };
+  });
+  document.getElementById('prodCategories').value = JSON.stringify(categoriesData);
+}
+
+// Open category manager modal
+function openCategoryManager() {
+  // Simple alert for now - can be expanded to a full modal
+  const catNames = allCategories.map(c => c.name).join(', ') || 'No categories yet';
+  alert(`Existing Categories:\n${catNames}\n\nType a category name in the search box to create a new one.`);
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  const search = document.getElementById('categorySearch');
+  const dropdown = document.getElementById('categoryDropdown');
+  if (search && dropdown && !search.contains(e.target) && !dropdown.contains(e.target)) {
+    dropdown.classList.add('hidden');
+  }
+});
+
 /* ADD PRODUCT */
-async function addProduct(name, brand, price, image, originalPrice, discount) {
+async function addProduct(name, brand, price, image, originalPrice, discount, categories) {
   const body = { name, brand, price, image };
   if (originalPrice) body.originalPrice = originalPrice;
   if (discount) body.discount = discount;
+  if (categories) body.categories = categories;
   const res = await fetch(`${API_BASE}/products`, {
     method: 'POST',
     headers: getAuthHeaders(),
@@ -563,13 +861,15 @@ document.getElementById('addProductBtn').onclick = async () => {
   const image = document.getElementById('prodImage').value.trim();
   const originalPrice = parseFloat(document.getElementById('prodOriginalPrice').value) || undefined;
   const discount = parseFloat(document.getElementById('prodDiscount').value) || undefined;
+  const categoriesJson = document.getElementById('prodCategories').value;
+  const categories = categoriesJson ? JSON.parse(categoriesJson).map(c => c.id) : [];
 
   if (!name || !brand || isNaN(price) || !image) {
     alert('Please fill all fields');
     return;
   }
 
-  const ok = await addProduct(name, brand, price, image, originalPrice, discount);
+  const ok = await addProduct(name, brand, price, image, originalPrice, discount, categories);
 
   if (ok) {
     document.getElementById('prodName').value = '';
@@ -578,6 +878,12 @@ document.getElementById('addProductBtn').onclick = async () => {
     document.getElementById('prodImage').value = '';
     document.getElementById('prodOriginalPrice').value = '';
     document.getElementById('prodDiscount').value = '';
+    // Reset categories
+    selectedCategoryIds = [];
+    selectedSubcategories = [];
+    document.getElementById('prodCategories').value = '[]';
+    document.getElementById('selectedCategories').innerHTML = '';
+    document.getElementById('subcategorySection').classList.add('hidden');
     alert('Product added successfully');
     loadAdminProducts();
   } else {
@@ -692,6 +998,7 @@ async function loginAdmin() {
 
       loadAdminProducts();
       loadAdminFeatured();
+      loadCategories();
       loadComplaints();
       loadOrders();
 
@@ -797,6 +1104,7 @@ function initApp() {
 
     loadAdminProducts();
     loadAdminFeatured();
+    loadCategories();
     loadComplaints();
     loadOrders();
 

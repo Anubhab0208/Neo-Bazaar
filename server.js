@@ -83,7 +83,8 @@ const productSchema = new mongoose.Schema({
   originalPrice: Number,
   discount: Number,
   brand: String,
-  image: String
+  image: String,
+  categories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }]
 }, { timestamps: true });
 
 const Product = mongoose.model("Product", productSchema);
@@ -99,6 +100,14 @@ const featuredProductSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const FeaturedProduct = mongoose.model("FeaturedProduct", featuredProductSchema);
+
+// CATEGORY
+const categorySchema = new mongoose.Schema({
+  name: { type: String, required: true, unique: true, trim: true },
+  subcategories: [{ type: String, trim: true }]
+}, { timestamps: true });
+
+const Category = mongoose.model("Category", categorySchema);
 
 // USER
 const userSchema = new mongoose.Schema({
@@ -279,7 +288,7 @@ app.post("/api/products", adminAuth, async(req,res)=>{
   console.log("POST /api/products received");
   console.log("Body:", req.body);
   try{
-    const {name,brand,price,image,originalPrice,discount} = req.body;
+    const {name,brand,price,image,originalPrice,discount,categories} = req.body;
 
     if(!name || !brand || !price || !image){
       console.log("Missing fields - name:", name, "brand:", brand, "price:", price, "image:", image);
@@ -292,7 +301,8 @@ app.post("/api/products", adminAuth, async(req,res)=>{
       price:Number(price),
       image,
       originalPrice: originalPrice ? Number(originalPrice) : undefined,
-      discount: discount ? Number(discount) : undefined
+      discount: discount ? Number(discount) : undefined,
+      categories: categories || []
     });
     
     console.log("Product created:", product._id);
@@ -367,6 +377,110 @@ app.delete("/api/featured-products/:id", adminAuth, async (req, res) => {
     res.status(500).json({ success: false });
   }
 });
+
+/* =========================
+   CATEGORIES
+========================= */
+
+// GET ALL CATEGORIES with their subcategories
+app.get("/api/categories", async (req, res) => {
+  try {
+    const categories = await Category.find().sort({ name: 1 });
+    res.json(categories);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// SEARCH CATEGORIES by name
+app.get("/api/categories/search", async (req, res) => {
+  try {
+    const { q } = req.query;
+    const query = q ? { name: { $regex: q, $options: 'i' } } : {};
+    const categories = await Category.find(query).sort({ name: 1 });
+    res.json(categories);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// CREATE NEW CATEGORY (Admin only)
+app.post("/api/categories", adminAuth, async (req, res) => {
+  try {
+    const { name, subcategories = [] } = req.body;
+    
+    if (!name || name.trim() === '') {
+      return res.status(400).json({ error: "Category name is required" });
+    }
+    
+    const category = await Category.create({
+      name: name.trim(),
+      subcategories: subcategories.filter(s => s && s.trim()).map(s => s.trim())
+    });
+    
+    res.json({ success: true, category });
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.status(400).json({ error: "Category already exists" });
+    }
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ADD SUBCATEGORY TO EXISTING CATEGORY (Admin only)
+app.post("/api/categories/:id/subcategories", adminAuth, async (req, res) => {
+  try {
+    const { subcategory } = req.body;
+    
+    if (!subcategory || subcategory.trim() === '') {
+      return res.status(400).json({ error: "Subcategory name is required" });
+    }
+    
+    const category = await Category.findByIdAndUpdate(
+      req.params.id,
+      { $addToSet: { subcategories: subcategory.trim() } },
+      { new: true }
+    );
+    
+    if (!category) {
+      return res.status(404).json({ error: "Category not found" });
+    }
+    
+    res.json({ success: true, category });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE CATEGORY (Admin only)
+app.delete("/api/categories/:id", adminAuth, async (req, res) => {
+  try {
+    await Category.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// REMOVE SUBCATEGORY FROM CATEGORY (Admin only)
+app.delete("/api/categories/:id/subcategories/:subcategory", adminAuth, async (req, res) => {
+  try {
+    const category = await Category.findByIdAndUpdate(
+      req.params.id,
+      { $pull: { subcategories: req.params.subcategory } },
+      { new: true }
+    );
+    
+    if (!category) {
+      return res.status(404).json({ error: "Category not found" });
+    }
+    
+    res.json({ success: true, category });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 /* =========================
    COMPLAINTS
 ========================= */
