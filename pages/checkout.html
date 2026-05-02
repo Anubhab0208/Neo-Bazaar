@@ -204,27 +204,89 @@
         <div class="summary-row total"><span>Total</span><span class="amt" id="totalDisplay">₹0</span></div>
       </div>
 
-      <div class="promo-row">
-        <input id="promoInput" placeholder="Promo code" />
-        <button class="btn-apply" onclick="applyPromo()">Apply</button>
+      <div style="margin-top:14px;">
+  <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:10px;">🏷️ Apply Coupon</div>
+  <div class="promo-row">
+  <input id="promoInput" placeholder="Enter coupon code" />
+  <button class="btn-apply" id="applyBtn" onclick="applyPromo()">Apply</button>
+</div>
+<div style="position:relative;">
+  <div onclick="document.getElementById('couponScroll').scrollBy({left:-150,behavior:'smooth'})" style="position:absolute;left:0;top:50%;transform:translateY(-50%);background:linear-gradient(to right,#1a1730 60%,transparent);padding:8px 16px 8px 4px;cursor:pointer;color:#a78bfa;font-size:18px;z-index:1;">‹</div>
+  <div id="couponScroll" style="margin-top:10px;display:flex;flex-direction:row;gap:8px;overflow-x:auto;padding:0 24px 6px;scrollbar-width:none;">
+    <div onclick="document.getElementById('promoInput').value='NEODROP10';"
+      style="min-width:140px;flex-shrink:0;background:#1a1730;border:1px solid #2a2248;border-radius:8px;padding:10px 14px;cursor:pointer;"
+      onmouseover="this.style.borderColor='#a78bfa'" onmouseout="this.style.borderColor='#2a2248'">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#a78bfa;">NEODROP10</span>
+        <span style="font-size:11px;color:#22c55e;font-weight:600;" id="tick-NEODROP10">15% OFF</span>
       </div>
-
-      <div id="promoCodeInfo" class="promo-info-box" style="display: none; margin-top: 12px; padding: 12px; border-radius: 8px; border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.08); color: #fca5a5; font-size: 13px; line-height: 1.5;">
-        <div id="promoCodeDescription"></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;">Extra 15% off on all orders.</div>
+    </div>
+    <div onclick="document.getElementById('promoInput').value='SAVE5';"
+      style="min-width:140px;flex-shrink:0;background:#1a1730;border:1px solid #2a2248;border-radius:8px;padding:10px 14px;cursor:pointer;"
+      onmouseover="this.style.borderColor='#a78bfa'" onmouseout="this.style.borderColor='#2a2248'">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#a78bfa;">SAVE5</span>
+        <span style="font-size:11px;color:#22c55e;font-weight:600;" id="tick-SAVE5">5% OFF</span>
       </div>
-
-      <button class="place-btn" id="placeBtn" onclick="placeOrder()">
-        <span class="btn-text">Place Order →</span>
-        <div class="spinner"></div>
-      </button>
-
-      <div class="secure-badges">
-        <span class="badge green">✓ SSL Secured</span>
-        <span class="badge blue">Free Returns</span>
-        <span class="badge green">✓ Safe Checkout</span>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;">Flat 5% off sitewide.</div>
+    </div>
+    <div onclick="document.getElementById('promoInput').value='NEOB10';"
+      style="min-width:140px;flex-shrink:0;background:#1a1730;border:1px solid #2a2248;border-radius:8px;padding:10px 14px;cursor:pointer;"
+      onmouseover="this.style.borderColor='#a78bfa'" onmouseout="this.style.borderColor='#2a2248'">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#a78bfa;">NEOB10</span>
+        <span style="font-size:11px;color:#22c55e;font-weight:600;" id="tick-NEOB10">10% OFF</span>
       </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;">10% off on all products.</div>
+    </div>
+    <div onclick="document.getElementById('promoInput').value='NEO50';"
+      style="min-width:140px;flex-shrink:0;background:#1a1730;border:1px solid #2a2248;border-radius:8px;padding:10px 14px;cursor:pointer;"
+      onmouseover="this.style.borderColor='#a78bfa'" onmouseout="this.style.borderColor='#2a2248'">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#a78bfa;">NEO50</span>
+        <span style="font-size:11px;color:#22c55e;font-weight:600;" id="tick-NEO50">₹50 OFF</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;">Flat ₹50 off on your order.</div>
+    </div>
+    <div onclick="document.getElementById('promoInput').value='FREESHIP';"
+      style="min-width:140px;flex-shrink:0;background:#1a1730;border:1px solid #2a2248;border-radius:8px;padding:10px 14px;cursor:pointer;"
+      onmouseover="this.style.borderColor='#a78bfa'" onmouseout="this.style.borderColor='#2a2248'">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#a78bfa;">FREESHIP</span>
+        <span style="font-size:11px;color:#22c55e;font-weight:600;" id="tick-FREESHIP">FREE DELIVERY</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;">Free delivery on your order.</div>
+    </div>
+    <div onclick="document.getElementById('promoInput').value='WELCOME15';"
+      style="min-width:140px;flex-shrink:0;background:#1a1730;border:1px solid #2a2248;border-radius:8px;padding:10px 14px;cursor:pointer;"
+      onmouseover="this.style.borderColor='#a78bfa'" onmouseout="this.style.borderColor='#2a2248'">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#a78bfa;">WELCOME15</span>
+        <span style="font-size:11px;color:#22c55e;font-weight:600;" id="tick-WELCOME15">15% OFF</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;">Welcome offer! 15% off for new users.</div>
+    </div>
+    <div onclick="document.getElementById('promoInput').value='BIGSALE20';"
+      style="min-width:140px;flex-shrink:0;background:#1a1730;border:1px solid #2a2248;border-radius:8px;padding:10px 14px;cursor:pointer;"
+      onmouseover="this.style.borderColor='#a78bfa'" onmouseout="this.style.borderColor='#2a2248'">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#a78bfa;">BIGSALE20</span>
+        <span style="font-size:11px;color:#22c55e;font-weight:600;" id="tick-BIGSALE20">20% OFF</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;">Big sale! 20% off sitewide.</div>
+    </div>
+    <div onclick="document.getElementById('promoInput').value='LUCKY25';"
+      style="min-width:140px;flex-shrink:0;background:#1a1730;border:1px solid #2a2248;border-radius:8px;padding:10px 14px;cursor:pointer;"
+      onmouseover="this.style.borderColor='#a78bfa'" onmouseout="this.style.borderColor='#2a2248'">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#a78bfa;">LUCKY25</span>
+        <span style="font-size:11px;color:#22c55e;font-weight:600;" id="tick-LUCKY25">25% OFF</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;">You're lucky! 25% off today only.</div>
     </div>
   </div>
+  <div onclick="document.getElementById('couponScroll').scrollBy({left:150,behavior:'smooth'})" style="position:absolute;right:0;top:50%;transform:translateY(-50%);background:linear-gradient(to left,#1a1730 60%,transparent);padding:8px 4px 8px 16px;cursor:pointer;color:#a78bfa;font-size:18px;z-index:1;">›</div>
 </div>
 
 <script>
@@ -367,128 +429,60 @@
   let appliedPromoCode = '';
   let appliedPromoData = null;
 
-  async function applyPromo() {
-    const code = document.getElementById("promoInput").value.trim().toUpperCase();
-    const codes = await getPromoCodes();
-    const promo = codes.find(c => c.code === code);
-    const infoBox = document.getElementById("promoCodeInfo");
-    const infoDesc = document.getElementById("promoCodeDescription");
+  function applyPromo() {
+  const code = document.getElementById("promoInput").value.trim().toUpperCase();
 
-    // Clear previous info
-    infoBox.style.display = "none";
-    infoDesc.innerHTML = "";
+  // Reset all ticks
+  const allCodes = ["NEODROP10","SAVE5","NEOB10","NEO50","FREESHIP","WELCOME15","BIGSALE20","LUCKY25"];
+  const allLabels = {"NEODROP10":"15% OFF","SAVE5":"5% OFF","NEOB10":"10% OFF","NEO50":"₹50 OFF","FREESHIP":"FREE DELIVERY","WELCOME15":"15% OFF","BIGSALE20":"20% OFF","LUCKY25":"25% OFF"};
+  allCodes.forEach(c => {
+    const el = document.getElementById("tick-" + c);
+    if (el) el.textContent = allLabels[c];
+  });
 
-    if (!promo) {
-      showError("Invalid promo code. Try NEODROP10, MEGADEAL, or FLASH90");
-      infoBox.style.borderColor = "#ef4444";
-      infoBox.style.background = "rgba(239, 68, 68, 0.08)";
-      infoBox.style.color = "#fca5a5";
-      infoDesc.innerHTML = "❌ <strong>Code not found:</strong> This promo code does not exist. Please check the code and try again.";
-      infoBox.style.display = "block";
-      return;
-    }
+  freeShipping = false;
+  fixedDiscount = 0;
 
-    // Check if code is active
-    if (!promo.active) {
-      showError("This promo code is no longer active");
-      infoBox.style.borderColor = "#ef4444";
-      infoBox.style.background = "rgba(239, 68, 68, 0.08)";
-      infoBox.style.color = "#fca5a5";
-      infoDesc.innerHTML = "❌ <strong>Code expired:</strong> This promo code is no longer active. Please try another code.";
-      infoBox.style.display = "block";
-      return;
-    }
-
-    // Check global usage limit (single-use codes)
-    if (promo.usageLimit > 0 && promo.usedCount >= promo.usageLimit) {
-      showError("This promo code has reached its usage limit");
-      infoBox.style.borderColor = "#ef4444";
-      infoBox.style.background = "rgba(239, 68, 68, 0.08)";
-      infoBox.style.color = "#fca5a5";
-      infoDesc.innerHTML = `❌ <strong>Code limit reached:</strong> This code could only be used ${promo.usageLimit} time(s) and has already been used by other customers. No more uses available.`;
-      infoBox.style.display = "block";
-      return;
-    }
-
-    // Check minimum order amount
-    const subtotal = cart.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0);
-    if (promo.minAmount > 0 && subtotal < promo.minAmount) {
-      showError(`Minimum order amount ₹${promo.minAmount} required for this code`);
-      infoBox.style.borderColor = "#ef4444";
-      infoBox.style.background = "rgba(239, 68, 68, 0.08)";
-      infoBox.style.color = "#fca5a5";
-      const shortfall = promo.minAmount - subtotal;
-      infoDesc.innerHTML = `⚠️ <strong>Minimum order not met:</strong> This code requires a minimum order of ₹${promo.minAmount}. Your current order is ₹${Math.floor(subtotal)}. Add ₹${Math.ceil(shortfall)} more to qualify.`;
-      infoBox.style.display = "block";
-      return;
-    }
-
-    // Check one-time per account
-    let userEmail = document.getElementById("email").value.trim();
-    if (!userEmail) {
-      const user = JSON.parse(localStorage.getItem("user") || "null");
-      userEmail = user?.email || "";
-    }
-
-    if (promo.oneTimePerAccount) {
-      if (!userEmail) {
-        showError("Please enter your email address to use this promo code");
-        infoBox.style.borderColor = "#ef4444";
-        infoBox.style.background = "rgba(239, 68, 68, 0.08)";
-        infoBox.style.color = "#fca5a5";
-        infoDesc.innerHTML = "❌ <strong>Email required:</strong> This is a one-time-per-account code. Please enter your email address in the delivery details section.";
-        infoBox.style.display = "block";
-        return;
-      }
-      const usedPromos = JSON.parse(localStorage.getItem(`usedPromos_${userEmail}`) || '[]');
-      if (usedPromos.includes(code)) {
-        showError("You have already used this promo code on your account");
-        infoBox.style.borderColor = "#ef4444";
-        infoBox.style.background = "rgba(239, 68, 68, 0.08)";
-        infoBox.style.color = "#fca5a5";
-        infoDesc.innerHTML = `❌ <strong>Already redeemed:</strong> You have already used this promo code (${code}) on your account (${userEmail}). Each account can only use this code once.`;
-        infoBox.style.display = "block";
-        return;
-      }
-    }
-
-    // Calculate discount rate
-    if (promo.discountType === 'percent') {
-      discountRate = promo.value / 100;
-    } else {
-      discountRate = Math.min(promo.value / subtotal, 1);
-    }
-
-    appliedPromoCode = code;
-    appliedPromoData = promo;
-    const discountLabel = promo.discountType === 'fixed' ? `₹${promo.value} off` : `${promo.value}% off`;
-    const limitInfo = promo.usageLimit > 0 ? ` (Limited: ${promo.usageLimit - promo.usedCount} remaining)` : '';
-    
-    // Show success message with code info
-    showError(`🎉 ${discountLabel} applied!${limitInfo}`, "success");
-    
-    // Show success info box
-    infoBox.style.borderColor = "#1a4d1a";
-    infoBox.style.background = "rgba(10, 46, 10, 0.3)";
-    infoBox.style.color = "#86efac";
-    let infoText = `✓ <strong>${discountLabel} discount applied!</strong><br>`;
-    if (promo.minAmount > 0) infoText += `Minimum order: ₹${promo.minAmount}<br>`;
-    if (promo.usageLimit > 0) infoText += `Uses remaining: ${promo.usageLimit - promo.usedCount}/${promo.usageLimit}<br>`;
-    if (promo.oneTimePerAccount) infoText += `This code can only be used once per account`;
-    infoDesc.innerHTML = infoText;
-    infoBox.style.display = "block";
-    
-    updateTotals();
-    updateDiscountLabel();
+  if (code === "NEODROP10") {
+    discountRate = 0.15;
+    document.getElementById("tick-NEODROP10").textContent = "✅ Applied";
+    showError("🎉 NEODROP10 applied! 15% off!", "success");
+  } else if (code === "SAVE5") {
+    discountRate = 0.05;
+    document.getElementById("tick-SAVE5").textContent = "✅ Applied";
+    showError("SAVE5 applied! 5% off.", "success");
+  } else if (code === "NEOB10") {
+    discountRate = 0.10;
+    document.getElementById("tick-NEOB10").textContent = "✅ Applied";
+    showError("🎉 NEOB10 applied! 10% off!", "success");
+  } else if (code === "NEO50") {
+    discountRate = 0; fixedDiscount = 50;
+    document.getElementById("tick-NEO50").textContent = "✅ Applied";
+    showError("🎉 NEO50 applied! ₹50 off!", "success");
+  } else if (code === "FREESHIP") {
+    freeShipping = true;
+    document.getElementById("tick-FREESHIP").textContent = "✅ Applied";
+    showError("🎉 FREESHIP applied! Free delivery!", "success");
+  } else if (code === "WELCOME15") {
+    discountRate = 0.15;
+    document.getElementById("tick-WELCOME15").textContent = "✅ Applied";
+    showError("🎉 WELCOME15 applied! 15% off!", "success");
+  } else if (code === "BIGSALE20") {
+    discountRate = 0.20;
+    document.getElementById("tick-BIGSALE20").textContent = "✅ Applied";
+    showError("🎉 BIGSALE20 applied! 20% off!", "success");
+  } else if (code === "LUCKY25") {
+    discountRate = 0.25;
+    document.getElementById("tick-LUCKY25").textContent = "✅ Applied";
+    showError("🎉 LUCKY25 applied! 25% off!", "success");
+  } else {
+    discountRate = 0.10;
+    showError("Invalid coupon code.");
+    return;
   }
-
-  function updateDiscountLabel() {
-    const label = document.querySelector('.summary-row:nth-child(3) span:first-child');
-    if (label && appliedPromoData) {
-      const discountLabel = appliedPromoData.discountType === 'fixed' ? `₹${appliedPromoData.value} off` : `${appliedPromoData.value}% off`;
-      label.textContent = `Discount (${discountLabel})`;
-    }
-  }
+  document.getElementById("applyBtn").textContent = "✅ Applied";
+  updateTotals();
+}
 
   function showError(msg, type = "error") {
     const el = document.getElementById("errorMsg");
@@ -565,12 +559,7 @@
       // Save to lastOrder (for backward compatibility)
       localStorage.setItem("lastOrder", JSON.stringify(newOrder));
       
-      // Save user info for fetching orders
-      localStorage.setItem("user", JSON.stringify({ 
-        email: orderData.user.email, 
-        username: orderData.user.name 
-      }));
-
+      
       // Mark promo code as used (for one-time per account tracking)
       if (appliedPromoCode && orderData.user.email) {
         const usedPromos = JSON.parse(localStorage.getItem(`usedPromos_${orderData.user.email}`) || '[]');
@@ -595,13 +584,12 @@
   }
 
   // Autofill email & phone from logged-in user
-    const _u = JSON.parse(localStorage.getItem("user") || "null");
-    if (_u) {
-      document.getElementById("userEmailDisplay").textContent = _u.email || "—";
-      document.getElementById("email").value = _u.email || "";
-    }
-
-    loadCart();
+  loadCart();
+  const _u = JSON.parse(localStorage.getItem("user") || "null");
+  if (_u) {
+    document.getElementById("userEmailDisplay").textContent = _u.email || "—";
+    document.getElementById("email").value = _u.email || "";
+  }
 </script>
 </body>
 </html>
