@@ -1587,25 +1587,15 @@ async function loadAdminFeatured() {
         </div>
         <p class="font-bold text-white">${escapeHtml(p.name)}</p>
         <p class="text-sm text-gray-400">${escapeHtml(p.brand || 'N/A')}</p>
-<<<<<<< HEAD
-        <p class="text-violet-400 font-bold mt-2">₹${Number(p.price).toLocaleString()}</p>
+        ${p.originalPrice ? `<p class="text-sm text-gray-500 line-through">₹${Number(p.originalPrice).toLocaleString()}</p>` : ''}
+        <p class="text-violet-400 font-bold mt-1">₹${Number(p.price).toLocaleString()}</p>
+        ${p.discount ? `<span class="text-xs bg-orange-500/20 text-orange-400 font-bold px-2 py-0.5 rounded">${p.discount}% OFF</span>` : ''}
         <div class="flex gap-2 mt-3">
           <button class="edit-featured-btn flex-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-2 rounded text-xs transition" data-id="${p._id}">
             ✏️ Edit
           </button>
           <button class="delete-featured-btn flex-1 bg-red-600 hover:bg-red-700 text-white px-2 py-2 rounded text-xs transition" data-id="${p._id}">
             🗑️ Delete
-=======
-        ${p.originalPrice ? `<p class="text-sm text-gray-500 line-through">₹${Number(p.originalPrice).toLocaleString()}</p>` : ''}
-        <p class="text-violet-400 font-bold mt-1">₹${Number(p.price).toLocaleString()}</p>
-        ${p.discount ? `<span class="text-xs bg-orange-500/20 text-orange-400 font-bold px-2 py-0.5 rounded">${p.discount}% OFF</span>` : ''}
-        <div class="flex gap-2 mt-3">
-          <button class="edit-featured-btn flex-1 bg-violet-600 hover:bg-violet-700 text-white px-3 py-2 rounded text-sm transition" data-id="${p._id}">
-            ✏️ Edit
-          </button>
-          <button class="delete-featured-btn flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition" data-id="${p._id}">
-            Delete
->>>>>>> 8941fc787d1b766a8ea1a54be58536df02e99890
           </button>
         </div>
       </div>
@@ -1973,100 +1963,6 @@ function featCalcFromDiscount() {
 }
 
 /* =============================================
-<<<<<<< HEAD
-   PRODUCT EDIT FUNCTIONS
-   ============================================= */
-// Note: currentEditProductId is already declared above for category editing
-let currentEditIsFeatured = false;
-
-function calculateEditPrice() {
-  const msrp     = parseFloat(document.getElementById('editProdOriginalPrice').value);
-  let   discount = parseFloat(document.getElementById('editProdDiscount').value);
-  if (discount < 0) { discount = 0; document.getElementById('editProdDiscount').value = 0; }
-  if (discount > 100) { discount = 100; document.getElementById('editProdDiscount').value = 100; }
-  if (!isNaN(msrp) && !isNaN(discount)) {
-    const sell = +(msrp * (1 - discount / 100)).toFixed(2);
-    document.getElementById('editProdPrice').value = sell > 0 ? sell : 0;
-  }
-}
-
-function openProductEditModal(productId) {
-  const product = window.adminProducts?.find(p => p._id === productId);
-  if (!product) {
-    alert('Product not found');
-    return;
-  }
-
-  currentEditProductId = productId;
-  currentEditIsFeatured = false;
-
-  document.getElementById('editProdName').value = product.name || '';
-  document.getElementById('editProdBrand').value = product.brand || '';
-  document.getElementById('editProdImage').value = product.image || '';
-  document.getElementById('editProdPrice').value = product.price || '';
-  document.getElementById('editProdOriginalPrice').value = product.originalPrice || '';
-  document.getElementById('editProdDiscount').value = product.discount || '';
-
-  document.getElementById('productEditModal').classList.remove('hidden');
-  document.getElementById('productEditModal').classList.add('flex');
-}
-
-async function openFeaturedProductEditModal(productId) {
-  // Fetch featured products if not already loaded
-  try {
-    const res = await fetch(`${API_BASE}/featured-products`);
-    const featured = await res.json();
-    const product = featured.find(p => p._id === productId);
-    
-    if (!product) {
-      alert('Featured product not found');
-      return;
-    }
-
-    currentEditProductId = productId;
-    currentEditIsFeatured = true;
-
-    document.getElementById('editProdName').value = product.name || '';
-    document.getElementById('editProdBrand').value = product.brand || '';
-    document.getElementById('editProdImage').value = product.image || '';
-    document.getElementById('editProdPrice').value = product.price || '';
-    document.getElementById('editProdOriginalPrice').value = product.originalPrice || '';
-    document.getElementById('editProdDiscount').value = product.discount || '';
-
-    document.getElementById('productEditModal').classList.remove('hidden');
-    document.getElementById('productEditModal').classList.add('flex');
-  } catch (err) {
-    console.error('Error fetching featured product:', err);
-    alert('Error loading featured product');
-  }
-}
-
-function closeProductEditModal() {
-  document.getElementById('productEditModal').classList.add('hidden');
-  document.getElementById('productEditModal').classList.remove('flex');
-  currentEditProductId = null;
-  currentEditIsFeatured = false;
-}
-
-async function saveProductEdit() {
-  if (!currentEditProductId) return;
-
-  const name = document.getElementById('editProdName').value.trim();
-  const brand = document.getElementById('editProdBrand').value.trim();
-  const image = document.getElementById('editProdImage').value.trim();
-  let price = parseFloat(document.getElementById('editProdPrice').value);
-  const originalPrice = parseFloat(document.getElementById('editProdOriginalPrice').value) || undefined;
-  const discount = parseFloat(document.getElementById('editProdDiscount').value) || undefined;
-
-  // Auto-calculate price if original price and discount are provided
-  if (isNaN(price) && originalPrice && discount) {
-    price = +(originalPrice * (1 - discount / 100)).toFixed(2);
-    document.getElementById('editProdPrice').value = price;
-  }
-
-  if (!name || !brand || !image || isNaN(price) || price <= 0) {
-    alert('Please fill in all required fields');
-=======
    FEATURED PRODUCT EDITING MODAL
    ============================================= */
 let currentEditFeaturedId = null;
@@ -2137,13 +2033,11 @@ async function saveFeaturedEdit() {
     msgEl.textContent = 'Please fill all required fields.';
     msgEl.className   = 'text-xs text-red-400 text-center';
     msgEl.classList.remove('hidden');
->>>>>>> 8941fc787d1b766a8ea1a54be58536df02e99890
     return;
   }
 
   const body = { name, brand, price, image };
   if (originalPrice) body.originalPrice = originalPrice;
-<<<<<<< HEAD
   if (discount) body.discount = discount;
 
   const endpoint = currentEditIsFeatured 
@@ -2172,31 +2066,6 @@ async function saveFeaturedEdit() {
   } catch (err) {
     console.error('Error updating product:', err);
     alert('Error updating product');
-=======
-  if (discount)      body.discount      = discount;
-
-  try {
-    const res  = await fetch(`${API_BASE}/featured-products/${currentEditFeaturedId}`, {
-      method:  'PUT',
-      headers: getAuthHeaders(),
-      body:    JSON.stringify(body)
-    });
-    const data = await res.json();
-    if (res.ok && data.success) {
-      closeFeaturedEditModal();
-      loadAdminFeatured();
-      alert('Featured product updated!');
-    } else {
-      msgEl.textContent = data.error || 'Failed to update featured product.';
-      msgEl.className   = 'text-xs text-red-400 text-center';
-      msgEl.classList.remove('hidden');
-    }
-  } catch (err) {
-    console.error(err);
-    msgEl.textContent = 'Network error. Try again.';
-    msgEl.className   = 'text-xs text-red-400 text-center';
-    msgEl.classList.remove('hidden');
->>>>>>> 8941fc787d1b766a8ea1a54be58536df02e99890
   }
 }
 
