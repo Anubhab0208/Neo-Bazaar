@@ -372,6 +372,64 @@
             <button id="addFeaturedBtn" class="w-full bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-700 hover:to-violet-800 text-white font-bold py-3 rounded-lg transition shadow-lg">
               Add to Featured
             </button>
+
+            <!-- EXPANDABLE EXTRA DETAILS -->
+            <div class="border-t border-gray-600 pt-3">
+              <button type="button" onclick="toggleAddFeaturedDetails()" class="w-full flex items-center justify-between text-sm text-gray-400 hover:text-white transition">
+                <span id="addFeatDetailsToggleLabel">▶ Add more details (description, specs, stock…)</span>
+              </button>
+              <div id="addFeaturedDetails" class="hidden mt-4 space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">SKU / Product Code</label>
+                    <input id="featSku" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-violet-500" placeholder="e.g. WH-XM5-BLK">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Stock Quantity</label>
+                    <input id="featStock" type="number" min="0" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-violet-500" placeholder="0">
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Tags <span class="text-gray-500 font-normal">— comma separated</span></label>
+                  <input id="featTags" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-violet-500" placeholder="wireless, noise cancelling">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                  <textarea id="featDescription" rows="4" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-violet-500" placeholder="Full product description..."></textarea>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Highlights <span class="text-gray-500 font-normal">— bullet features</span></label>
+                  <div id="addFeatHighlightsList" class="space-y-1 mb-2 text-xs text-gray-400">None added</div>
+                  <div class="flex gap-2">
+                    <input id="addFeatHighlightInput" type="text" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-violet-500" placeholder="e.g. 30hr battery" onkeypress="if(event.key==='Enter')addFeatHighlight()">
+                    <button onclick="addFeatHighlight()" class="bg-violet-600 hover:bg-violet-700 text-white px-3 py-1 rounded text-sm">+</button>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Specifications</label>
+                  <div id="addFeatSpecsList" class="space-y-1 mb-2 text-xs text-gray-400">None added</div>
+                  <div class="flex gap-2">
+                    <input id="addFeatSpecKey"   type="text" placeholder="Spec"  class="flex-1 bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-violet-500" onkeypress="if(event.key==='Enter')addFeatSpec()">
+                    <input id="addFeatSpecValue" type="text" placeholder="Value" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-violet-500" onkeypress="if(event.key==='Enter')addFeatSpec()">
+                    <button onclick="addFeatSpec()" class="bg-violet-600 hover:bg-violet-700 text-white px-3 py-1 rounded text-sm">+</button>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Warranty</label>
+                    <input id="featWarranty" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-violet-500" placeholder="1 Year Warranty">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Return Policy</label>
+                    <input id="featReturnPolicy" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-violet-500" placeholder="10-day returns">
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Gallery Images <span class="text-gray-500 font-normal">— one URL per line</span></label>
+                  <textarea id="featImages" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm font-mono focus:outline-none focus:border-violet-500" placeholder="https://example.com/img2.jpg&#10;https://example.com/img3.jpg"></textarea>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1468,6 +1526,52 @@ function renderAddSpecs() {
     : 'None added';
 }
 
+/* =============================================
+   ADD FEATURED — extra detail helpers
+   ============================================= */
+let addFeatHighlights = [];
+let addFeatSpecs = [];
+
+function toggleAddFeaturedDetails() {
+  const panel = document.getElementById('addFeaturedDetails');
+  const label = document.getElementById('addFeatDetailsToggleLabel');
+  const hidden = panel.classList.toggle('hidden');
+  label.textContent = hidden
+    ? '▶ Add more details (description, specs, stock…)'
+    : '▼ Hide extra details';
+}
+
+function addFeatHighlight() {
+  const inp = document.getElementById('addFeatHighlightInput');
+  const val = inp.value.trim();
+  if (!val) return;
+  addFeatHighlights.push(val);
+  inp.value = '';
+  renderAddFeatHighlights();
+}
+function renderAddFeatHighlights() {
+  const el = document.getElementById('addFeatHighlightsList');
+  el.innerHTML = addFeatHighlights.length
+    ? addFeatHighlights.map((h, i) => `<div class="flex gap-2 items-center"><span class="text-violet-400">•</span><span class="flex-1 text-white text-xs">${escapeHtml(h)}</span><button onclick="addFeatHighlights.splice(${i},1);renderAddFeatHighlights()" class="text-red-400 text-xs">✕</button></div>`).join('')
+    : 'None added';
+}
+
+function addFeatSpec() {
+  const key   = document.getElementById('addFeatSpecKey').value.trim();
+  const value = document.getElementById('addFeatSpecValue').value.trim();
+  if (!key || !value) return;
+  addFeatSpecs.push({ key, value });
+  document.getElementById('addFeatSpecKey').value = '';
+  document.getElementById('addFeatSpecValue').value = '';
+  renderAddFeatSpecs();
+}
+function renderAddFeatSpecs() {
+  const el = document.getElementById('addFeatSpecsList');
+  el.innerHTML = addFeatSpecs.length
+    ? addFeatSpecs.map((s, i) => `<div class="flex gap-2 items-center"><span class="text-violet-300 text-xs font-bold w-24 shrink-0">${escapeHtml(s.key)}</span><span class="flex-1 text-white text-xs">${escapeHtml(s.value)}</span><button onclick="addFeatSpecs.splice(${i},1);renderAddFeatSpecs()" class="text-red-400 text-xs">✕</button></div>`).join('')
+    : 'None added';
+}
+
 /* ADD PRODUCT */
 async function addProduct(name, brand, price, image, originalPrice, discount, categories, extraFields) {
   const body = { name, brand, price, image, ...extraFields };
@@ -1782,12 +1886,24 @@ document.getElementById('addFeaturedBtn').onclick = async () => {
   const categoriesJson = document.getElementById('featCategories').value;
   const categories    = categoriesJson ? JSON.parse(categoriesJson).map(c => c.id) : [];
 
+  // Extra fields
+  const sku          = document.getElementById('featSku')?.value.trim()          || '';
+  const stock        = parseInt(document.getElementById('featStock')?.value)      || 0;
+  const tagsRaw      = document.getElementById('featTags')?.value                || '';
+  const tags         = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
+  const description  = document.getElementById('featDescription')?.value.trim()  || '';
+  const warranty     = document.getElementById('featWarranty')?.value.trim()     || '';
+  const returnPolicy = document.getElementById('featReturnPolicy')?.value.trim() || '';
+  const imagesRaw    = document.getElementById('featImages')?.value              || '';
+  const images       = imagesRaw.split('\n').map(l => l.trim()).filter(Boolean);
+
   if (!name || !brand || isNaN(price) || !image) {
     alert('Please fill all fields');
     return;
   }
 
-  const body = { name, brand, price, image };
+  const body = { name, brand, price, image, sku, stock, tags, description, warranty, returnPolicy, images,
+    highlights: addFeatHighlights, specifications: addFeatSpecs };
   if (originalPrice) body.originalPrice = originalPrice;
   if (discount)      body.discount      = discount;
   if (categories.length) body.categories = categories;
@@ -1807,6 +1923,18 @@ document.getElementById('addFeaturedBtn').onclick = async () => {
     document.getElementById('featOriginalPrice').value = '';
     document.getElementById('featDiscount').value      = '';
     featResetCategories();
+    // Reset extra fields
+    if (document.getElementById('featSku'))          document.getElementById('featSku').value = '';
+    if (document.getElementById('featStock'))        document.getElementById('featStock').value = '';
+    if (document.getElementById('featTags'))         document.getElementById('featTags').value = '';
+    if (document.getElementById('featDescription'))  document.getElementById('featDescription').value = '';
+    if (document.getElementById('featWarranty'))     document.getElementById('featWarranty').value = '';
+    if (document.getElementById('featReturnPolicy')) document.getElementById('featReturnPolicy').value = '';
+    if (document.getElementById('featImages'))       document.getElementById('featImages').value = '';
+    addFeatHighlights = [];
+    addFeatSpecs = [];
+    renderAddFeatHighlights();
+    renderAddFeatSpecs();
     alert('Featured product added');
     loadAdminFeatured();
   } else {

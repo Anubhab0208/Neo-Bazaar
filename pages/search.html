@@ -955,9 +955,10 @@
         const cats = (p.categories || []).map(c => typeof c === 'object' ? c.name : c).filter(Boolean);
         const hasDisc = p.discount && p.originalPrice;
         const isFeat = p._isFeatured;
+        const productUrl = `product.html?id=${p._id}`;
         return `
           <div class="product-card ${isFlash ? 'flash-card' : ''} ${isFeat ? 'ring-1 ring-violet-500/40' : ''} card-appear" style="animation-delay:${Math.min(i * 0.05, 0.5)}s">
-            <div class="product-img-wrap">
+            <div class="product-img-wrap" onclick="window.location.href='${productUrl}'" style="cursor:pointer">
               <img src="${p.image || ''}" alt="${escHtml(p.name || '')}"
                 onerror="this.outerHTML='<span style=\\'font-size:48px;opacity:0.4\\'>🛍️</span>'">
               ${isFeat
@@ -969,7 +970,7 @@
             </div>
             <div class="product-body">
               ${p.brand ? `<div class="product-brand">${escHtml(p.brand)}</div>` : ''}
-              <div class="product-name">${escHtml(p.name || 'Unnamed Product')}</div>
+              <div class="product-name" onclick="window.location.href='${productUrl}'" style="cursor:pointer">${escHtml(p.name || 'Unnamed Product')}</div>
               ${cats.length ? `<div class="cat-tags">${cats.map(c => `<span class="cat-tag">${escHtml(c)}</span>`).join('')}</div>` : ''}
               <div class="product-price-row">
                 <div class="price-block">
@@ -978,7 +979,7 @@
                        <div class="price-final">₹${Number(p.price).toLocaleString('en-IN')}</div>`
                     : `<div class="price-final">₹${Number(p.price || 0).toLocaleString('en-IN')}</div>`}
                 </div>
-                <button class="add-btn" onclick="addToCart('${p._id}')">🛒 Add</button>
+                <button class="add-btn" onclick="event.stopPropagation();addToCart('${p._id}')">🛒 Add</button>
               </div>
             </div>
           </div>`;

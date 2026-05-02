@@ -217,7 +217,7 @@ app.get("/admin", (req, res) => {
 });
 app.get("/pages/:page", (req, res) => {
   const page = req.params.page;
-  const validPages = ['admin', 'products', 'complaints', 'orders'];
+  const validPages = ['admin', 'products', 'complaints', 'orders', 'product', 'cart', 'checkout', 'orders', 'order-success', 'credits', 'search'];
   if (validPages.includes(page)) {
     res.sendFile(path.join(__dirname, "pages", page + ".html"));
   } else {
@@ -325,6 +325,31 @@ app.get("/api/products", async (req, res) => {
   res.json(products);
 });
 
+// GET FLASH PRODUCTS (discount >= 50%, from both regular and featured collections)
+app.get("/api/products/flash", async (req, res) => {
+  try {
+    const [regular, featured] = await Promise.all([
+      Product.find({ discount: { $gte: 50 } }).populate('categories', 'name subcategories'),
+      FeaturedProduct.find({ discount: { $gte: 50 } })
+    ]);
+    const featuredTagged = featured.map(p => ({ ...p.toObject(), _isFeatured: true }));
+    const all = [...featuredTagged, ...regular].sort((a, b) => (b.discount || 0) - (a.discount || 0));
+    res.json(all);
+  } catch (err) {
+    res.status(500).json([]);
+  }
+});
+
+// GET NEWEST PRODUCTS (latest 8 by createdAt)
+app.get("/api/products/newest", async (req, res) => {
+  try {
+    const products = await Product.find().sort({ createdAt: -1 }).limit(8);
+    res.json(products);
+  } catch {
+    res.status(500).json([]);
+  }
+});
+
 // GET SINGLE PRODUCT BY ID
 app.get("/api/products/:id", async (req, res) => {
   try {
@@ -423,31 +448,6 @@ app.delete("/api/products/:id", adminAuth, async(req,res)=>{
     res.json({success:true});
   }catch(err){
     res.status(500).json({error:err.message});
-  }
-});
-
-// GET FLASH PRODUCTS (discount >= 50%, from both regular and featured collections)
-app.get("/api/products/flash", async (req, res) => {
-  try {
-    const [regular, featured] = await Promise.all([
-      Product.find({ discount: { $gte: 50 } }).populate('categories', 'name subcategories'),
-      FeaturedProduct.find({ discount: { $gte: 50 } })
-    ]);
-    const featuredTagged = featured.map(p => ({ ...p.toObject(), _isFeatured: true }));
-    const all = [...featuredTagged, ...regular].sort((a, b) => (b.discount || 0) - (a.discount || 0));
-    res.json(all);
-  } catch (err) {
-    res.status(500).json([]);
-  }
-});
-
-// GET NEWEST PRODUCTS (latest 8 by createdAt)
-app.get("/api/products/newest", async (req, res) => {
-  try {
-    const products = await Product.find().sort({ createdAt: -1 }).limit(8);
-    res.json(products);
-  } catch {
-    res.status(500).json([]);
   }
 });
 
