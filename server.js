@@ -92,8 +92,21 @@ const productSchema = new mongoose.Schema({
   discount: Number,
   brand: String,
   image: String,
+  images: [{ type: String }],                // Additional gallery images
   categories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }],
-  selectedSubcategories: [{ type: String }]  // Stores selected subcategory names per product
+  selectedSubcategories: [{ type: String }],
+  // Rich product detail fields
+  description: { type: String, default: '' },
+  highlights: [{ type: String }],            // Short bullet-point features
+  specifications: [{                         // Key-value spec table
+    key:   { type: String },
+    value: { type: String }
+  }],
+  sku:          { type: String, default: '' },
+  stock:        { type: Number, default: 0 },
+  tags:         [{ type: String }],
+  warranty:     { type: String, default: '' },
+  returnPolicy: { type: String, default: '' }
 }, { timestamps: true });
 
 const Product = mongoose.model("Product", productSchema);
@@ -312,23 +325,47 @@ app.get("/api/products", async (req, res) => {
   res.json(products);
 });
 
+// GET SINGLE PRODUCT BY ID
+app.get("/api/products/:id", async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id).populate('categories', 'name subcategories');
+    if (!product) return res.status(404).json({ error: "Product not found" });
+    res.json(product);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ADMIN ADD PRODUCT
 app.post("/api/products", adminAuth, async(req,res)=>{
   try{
-    const {name,brand,price,image,originalPrice,discount,categories} = req.body;
+    const {
+      name, brand, price, image, images,
+      originalPrice, discount, categories,
+      description, highlights, specifications,
+      sku, stock, tags, warranty, returnPolicy
+    } = req.body;
 
     if(!name || !brand || !price || !image){
       return res.status(400).json({success:false, message: "Missing required fields"});
     }
 
     const product = await Product.create({
-      name,
-      brand,
-      price:Number(price),
+      name, brand,
+      price:         Number(price),
       image,
+      images:        images        || [],
       originalPrice: originalPrice ? Number(originalPrice) : undefined,
-      discount: discount ? Number(discount) : undefined,
-      categories: categories || []
+      discount:      discount      ? Number(discount)      : undefined,
+      categories:    categories    || [],
+      description:   description   || '',
+      highlights:    highlights    || [],
+      specifications: specifications || [],
+      sku:           sku           || '',
+      stock:         stock !== undefined ? Number(stock) : 0,
+      tags:          tags          || [],
+      warranty:      warranty      || '',
+      returnPolicy:  returnPolicy  || ''
     });
     
     res.json({success:true, productId: product._id});
@@ -390,20 +427,35 @@ app.get("/api/products/:id", async (req, res) => {
 // ADMIN UPDATE PRODUCT
 app.put("/api/products/:id", adminAuth, async (req, res) => {
   try {
-    const { name, brand, price, image, originalPrice, discount } = req.body;
+    const {
+      name, brand, price, image, images,
+      originalPrice, discount,
+      description, highlights, specifications,
+      sku, stock, tags, warranty, returnPolicy
+    } = req.body;
+
     const updateData = {};
-    if (name !== undefined) updateData.name = name;
-    if (brand !== undefined) updateData.brand = brand;
-    if (price !== undefined) updateData.price = price;
-    if (image !== undefined) updateData.image = image;
-    if (originalPrice !== undefined) updateData.originalPrice = originalPrice;
-    if (discount !== undefined) updateData.discount = discount;
+    if (name          !== undefined) updateData.name          = name;
+    if (brand         !== undefined) updateData.brand         = brand;
+    if (price         !== undefined) updateData.price         = Number(price);
+    if (image         !== undefined) updateData.image         = image;
+    if (images        !== undefined) updateData.images        = images;
+    if (originalPrice !== undefined) updateData.originalPrice = originalPrice !== '' ? Number(originalPrice) : undefined;
+    if (discount      !== undefined) updateData.discount      = discount      !== '' ? Number(discount)      : undefined;
+    if (description   !== undefined) updateData.description   = description;
+    if (highlights    !== undefined) updateData.highlights    = highlights;
+    if (specifications!== undefined) updateData.specifications= specifications;
+    if (sku           !== undefined) updateData.sku           = sku;
+    if (stock         !== undefined) updateData.stock         = Number(stock);
+    if (tags          !== undefined) updateData.tags          = tags;
+    if (warranty      !== undefined) updateData.warranty      = warranty;
+    if (returnPolicy  !== undefined) updateData.returnPolicy  = returnPolicy;
     
     const product = await Product.findByIdAndUpdate(
       req.params.id,
       updateData,
       { new: true }
-    );
+    ).populate('categories', 'name subcategories');
     
     if (!product) return res.status(404).json({ error: "Product not found" });
     res.json({ success: true, product });

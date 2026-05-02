@@ -239,6 +239,64 @@
             <button id="addProductBtn" class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-3 rounded-lg transition shadow-lg">
               Add Product
             </button>
+
+            <!-- EXPANDABLE EXTRA DETAILS -->
+            <div class="border-t border-gray-600 pt-3">
+              <button type="button" onclick="toggleAddProductDetails()" class="w-full flex items-center justify-between text-sm text-gray-400 hover:text-white transition">
+                <span id="addDetailsToggleLabel">▶ Add more details (description, specs, stock…)</span>
+              </button>
+              <div id="addProductDetails" class="hidden mt-4 space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">SKU / Product Code</label>
+                    <input id="prodSku" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-green-500" placeholder="e.g. WH-XM5-BLK">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Stock Quantity</label>
+                    <input id="prodStock" type="number" min="0" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-green-500" placeholder="0">
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Tags <span class="text-gray-500 font-normal">— comma separated</span></label>
+                  <input id="prodTags" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-green-500" placeholder="wireless, noise cancelling">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                  <textarea id="prodDescription" rows="4" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-green-500" placeholder="Full product description..."></textarea>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Highlights <span class="text-gray-500 font-normal">— bullet features</span></label>
+                  <div id="addHighlightsList" class="space-y-1 mb-2 text-xs text-gray-400">None added</div>
+                  <div class="flex gap-2">
+                    <input id="addHighlightInput" type="text" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-green-500" placeholder="e.g. 30hr battery" onkeypress="if(event.key==='Enter')addNewHighlight()">
+                    <button onclick="addNewHighlight()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">+</button>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Specifications</label>
+                  <div id="addSpecsList" class="space-y-1 mb-2 text-xs text-gray-400">None added</div>
+                  <div class="flex gap-2">
+                    <input id="addSpecKey"   type="text" placeholder="Spec"  class="flex-1 bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-green-500" onkeypress="if(event.key==='Enter')addNewSpec()">
+                    <input id="addSpecValue" type="text" placeholder="Value" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-green-500" onkeypress="if(event.key==='Enter')addNewSpec()">
+                    <button onclick="addNewSpec()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">+</button>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Warranty</label>
+                    <input id="prodWarranty" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-green-500" placeholder="1 Year Warranty">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Return Policy</label>
+                    <input id="prodReturnPolicy" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-green-500" placeholder="10-day returns">
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-300 mb-1">Gallery Images <span class="text-gray-500 font-normal">— one URL per line</span></label>
+                  <textarea id="prodImages" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm font-mono focus:outline-none focus:border-green-500" placeholder="https://example.com/img2.jpg&#10;https://example.com/img3.jpg"></textarea>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -289,6 +347,7 @@
             <div class="border-t border-gray-600 pt-4 mt-4">
               <div class="flex items-center justify-between mb-2">
                 <label class="block text-sm font-medium text-gray-300">Categories</label>
+                <button type="button" onclick="openCategoryManager()" class="text-xs text-violet-400 hover:text-violet-300 underline">Manage Categories</button>
               </div>
               <div id="featSelectedCategories" class="flex flex-wrap gap-2 mb-3 min-h-[32px]"></div>
               <input type="hidden" id="featCategories" value="[]">
@@ -494,6 +553,12 @@ async function loadAdminProducts() {
         <p class="font-bold text-white">${escapeHtml(p.name)}</p>
         <p class="text-sm text-gray-400">${escapeHtml(p.brand || 'N/A')}</p>
         ${p.categories?.length ? `<div class="flex flex-wrap gap-1 mt-1">${p.categories.map(c => { const cat = typeof c === 'object' ? c : {name: c}; const selectedSubs = p.selectedSubcategories || []; const catSubs = selectedSubs.filter(s => s.startsWith(cat.name + ':')); return `<span class="text-[10px] px-2 py-0.5 bg-violet-500/30 text-violet-300 rounded">${cat.name}${catSubs.length ? ': ' + catSubs.map(s => s.split(':')[1]).join(', ') : ''}</span>`; }).join('')}</div>` : '<p class="text-xs text-gray-500 mt-1">No categories</p>'}
+        <div class="flex flex-wrap gap-1 mt-2">
+          ${p.description ? `<span class="text-[10px] px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded">📝 Desc</span>` : '<span class="text-[10px] px-1.5 py-0.5 bg-gray-600/50 text-gray-500 rounded">No desc</span>'}
+          ${(p.specifications?.length) ? `<span class="text-[10px] px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded">⚙️ ${p.specifications.length} specs</span>` : ''}
+          ${(p.highlights?.length) ? `<span class="text-[10px] px-1.5 py-0.5 bg-orange-500/20 text-orange-400 rounded">• ${p.highlights.length} highlights</span>` : ''}
+          ${p.stock > 0 ? `<span class="text-[10px] px-1.5 py-0.5 bg-teal-500/20 text-teal-400 rounded">📦 ${p.stock}</span>` : '<span class="text-[10px] px-1.5 py-0.5 bg-red-500/20 text-red-400 rounded">Out of stock</span>'}
+        </div>
         <p class="text-green-400 font-bold mt-2">₹${Number(p.price).toLocaleString()}</p>
         <div class="flex gap-2 mt-3">
           <button class="edit-product-btn flex-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-2 rounded text-xs transition" data-id="${p._id}">
@@ -1357,9 +1422,55 @@ document.addEventListener('click', (e) => {
   }
 });
 
+/* =============================================
+   ADD PRODUCT — extra detail helpers
+   ============================================= */
+let addHighlights = [];
+let addSpecs = [];
+
+function toggleAddProductDetails() {
+  const panel = document.getElementById('addProductDetails');
+  const label = document.getElementById('addDetailsToggleLabel');
+  const hidden = panel.classList.toggle('hidden');
+  label.textContent = hidden
+    ? '▶ Add more details (description, specs, stock…)'
+    : '▼ Hide extra details';
+}
+
+function addNewHighlight() {
+  const inp = document.getElementById('addHighlightInput');
+  const val = inp.value.trim();
+  if (!val) return;
+  addHighlights.push(val);
+  inp.value = '';
+  renderAddHighlights();
+}
+function renderAddHighlights() {
+  const el = document.getElementById('addHighlightsList');
+  el.innerHTML = addHighlights.length
+    ? addHighlights.map((h, i) => `<div class="flex gap-2 items-center"><span class="text-green-400">•</span><span class="flex-1 text-white text-xs">${escapeHtml(h)}</span><button onclick="addHighlights.splice(${i},1);renderAddHighlights()" class="text-red-400 text-xs">✕</button></div>`).join('')
+    : 'None added';
+}
+
+function addNewSpec() {
+  const key   = document.getElementById('addSpecKey').value.trim();
+  const value = document.getElementById('addSpecValue').value.trim();
+  if (!key || !value) return;
+  addSpecs.push({ key, value });
+  document.getElementById('addSpecKey').value = '';
+  document.getElementById('addSpecValue').value = '';
+  renderAddSpecs();
+}
+function renderAddSpecs() {
+  const el = document.getElementById('addSpecsList');
+  el.innerHTML = addSpecs.length
+    ? addSpecs.map((s, i) => `<div class="flex gap-2 items-center"><span class="text-violet-300 text-xs font-bold w-24 shrink-0">${escapeHtml(s.key)}</span><span class="flex-1 text-white text-xs">${escapeHtml(s.value)}</span><button onclick="addSpecs.splice(${i},1);renderAddSpecs()" class="text-red-400 text-xs">✕</button></div>`).join('')
+    : 'None added';
+}
+
 /* ADD PRODUCT */
-async function addProduct(name, brand, price, image, originalPrice, discount, categories) {
-  const body = { name, brand, price, image };
+async function addProduct(name, brand, price, image, originalPrice, discount, categories, extraFields) {
+  const body = { name, brand, price, image, ...extraFields };
   if (originalPrice) body.originalPrice = originalPrice;
   if (discount) body.discount = discount;
   if (categories) body.categories = categories;
@@ -1535,14 +1646,30 @@ document.getElementById('addProductBtn').onclick = async () => {
   const categoriesJson = document.getElementById('prodCategories').value;
   const categories = categoriesJson ? JSON.parse(categoriesJson).map(c => c.id) : [];
 
+  // Extra fields
+  const sku          = document.getElementById('prodSku')?.value.trim()          || '';
+  const stock        = parseInt(document.getElementById('prodStock')?.value)      || 0;
+  const tagsRaw      = document.getElementById('prodTags')?.value                || '';
+  const tags         = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
+  const description  = document.getElementById('prodDescription')?.value.trim()  || '';
+  const warranty     = document.getElementById('prodWarranty')?.value.trim()     || '';
+  const returnPolicy = document.getElementById('prodReturnPolicy')?.value.trim() || '';
+  const imagesRaw    = document.getElementById('prodImages')?.value              || '';
+  const images       = imagesRaw.split('\n').map(l => l.trim()).filter(Boolean);
+
   if (!name || !brand || isNaN(price) || !image) {
-    alert('Please fill all fields');
+    alert('Please fill all required fields');
     return;
   }
 
-  const ok = await addProduct(name, brand, price, image, originalPrice, discount, categories);
+  const ok = await addProduct(name, brand, price, image, originalPrice, discount, categories, {
+    sku, stock, tags, description, warranty, returnPolicy, images,
+    highlights: addHighlights,
+    specifications: addSpecs
+  });
 
   if (ok) {
+    // Reset core fields
     document.getElementById('prodName').value = '';
     document.getElementById('prodBrand').value = '';
     document.getElementById('prodPrice').value = '';
@@ -1555,6 +1682,18 @@ document.getElementById('addProductBtn').onclick = async () => {
     document.getElementById('prodCategories').value = '[]';
     document.getElementById('selectedCategories').innerHTML = '';
     document.getElementById('subcategorySection').classList.add('hidden');
+    // Reset extra fields
+    if (document.getElementById('prodSku'))          document.getElementById('prodSku').value = '';
+    if (document.getElementById('prodStock'))        document.getElementById('prodStock').value = '';
+    if (document.getElementById('prodTags'))         document.getElementById('prodTags').value = '';
+    if (document.getElementById('prodDescription'))  document.getElementById('prodDescription').value = '';
+    if (document.getElementById('prodWarranty'))     document.getElementById('prodWarranty').value = '';
+    if (document.getElementById('prodReturnPolicy')) document.getElementById('prodReturnPolicy').value = '';
+    if (document.getElementById('prodImages'))       document.getElementById('prodImages').value = '';
+    addHighlights = [];
+    addSpecs = [];
+    renderAddHighlights();
+    renderAddSpecs();
     alert('Product added successfully');
     loadAdminProducts();
   } else {
@@ -1587,12 +1726,16 @@ async function loadAdminFeatured() {
         </div>
         <p class="font-bold text-white">${escapeHtml(p.name)}</p>
         <p class="text-sm text-gray-400">${escapeHtml(p.brand || 'N/A')}</p>
+        ${p.categories?.length ? `<div class="flex flex-wrap gap-1 mt-1">${p.categories.map(c => { const cat = typeof c === 'object' ? c : {name: c}; const selectedSubs = p.selectedSubcategories || []; const catSubs = selectedSubs.filter(s => s.startsWith(cat.name + ':')); return `<span class="text-[10px] px-2 py-0.5 bg-violet-500/30 text-violet-300 rounded">${cat.name}${catSubs.length ? ': ' + catSubs.map(s => s.split(':')[1]).join(', ') : ''}</span>`; }).join('')}</div>` : '<p class="text-xs text-gray-500 mt-1">No categories</p>'}
         ${p.originalPrice ? `<p class="text-sm text-gray-500 line-through">₹${Number(p.originalPrice).toLocaleString()}</p>` : ''}
         <p class="text-violet-400 font-bold mt-1">₹${Number(p.price).toLocaleString()}</p>
         ${p.discount ? `<span class="text-xs bg-orange-500/20 text-orange-400 font-bold px-2 py-0.5 rounded">${p.discount}% OFF</span>` : ''}
         <div class="flex gap-2 mt-3">
           <button class="edit-featured-btn flex-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-2 rounded text-xs transition" data-id="${p._id}">
             ✏️ Edit
+          </button>
+          <button class="edit-feat-cat-btn flex-1 bg-violet-600 hover:bg-violet-700 text-white px-2 py-2 rounded text-xs transition" data-id="${p._id}">
+            🏷️ Categories
           </button>
           <button class="delete-featured-btn flex-1 bg-red-600 hover:bg-red-700 text-white px-2 py-2 rounded text-xs transition" data-id="${p._id}">
             🗑️ Delete
@@ -1616,6 +1759,12 @@ async function loadAdminFeatured() {
     document.querySelectorAll('.edit-featured-btn').forEach(btn => {
       btn.onclick = async () => {
         await openFeaturedProductEditModal(btn.dataset.id);
+      };
+    });
+
+    document.querySelectorAll('.edit-feat-cat-btn').forEach(btn => {
+      btn.onclick = async () => {
+        await openFeaturedCategoryEditModal(btn.dataset.id);
       };
     });
   } catch {
@@ -1984,22 +2133,120 @@ function calculateEditPrice() {
   }
 }
 
+/* =============================================
+   PRODUCT EDIT MODAL — tab switching
+   ============================================= */
+function switchEditTab(tabName) {
+  document.querySelectorAll('.edit-tab').forEach(t => t.classList.remove('active-edit-tab'));
+  document.querySelectorAll('.edit-tab-content').forEach(c => c.classList.add('hidden'));
+  document.getElementById('editTab-' + tabName).classList.remove('hidden');
+  event.target.classList.add('active-edit-tab');
+}
+
+// Highlights helpers
+let editHighlights = [];
+function renderEditHighlights() {
+  const el = document.getElementById('editHighlightsList');
+  if (!editHighlights.length) { el.innerHTML = '<p class="text-xs text-gray-500">No highlights yet</p>'; return; }
+  el.innerHTML = editHighlights.map((h, i) => `
+    <div class="flex items-center gap-2 bg-gray-700 rounded-lg px-3 py-2">
+      <span class="text-blue-400 text-sm">•</span>
+      <span class="flex-1 text-sm text-white">${escapeHtml(h)}</span>
+      <button onclick="removeEditHighlight(${i})" class="text-red-400 hover:text-red-300 text-xs">✕</button>
+    </div>`).join('');
+}
+function addEditHighlight() {
+  const inp = document.getElementById('editHighlightInput');
+  const val = inp.value.trim();
+  if (!val) return;
+  editHighlights.push(val);
+  inp.value = '';
+  renderEditHighlights();
+}
+function removeEditHighlight(i) {
+  editHighlights.splice(i, 1);
+  renderEditHighlights();
+}
+
+// Specs helpers
+let editSpecs = [];
+function renderEditSpecs() {
+  const el = document.getElementById('editSpecsList');
+  if (!editSpecs.length) { el.innerHTML = '<p class="text-xs text-gray-500">No specs yet</p>'; return; }
+  el.innerHTML = editSpecs.map((s, i) => `
+    <div class="flex items-center gap-2 bg-gray-700 rounded-lg px-3 py-2">
+      <span class="text-xs font-bold text-violet-300 w-32 shrink-0">${escapeHtml(s.key)}</span>
+      <span class="flex-1 text-sm text-white">${escapeHtml(s.value)}</span>
+      <button onclick="removeEditSpec(${i})" class="text-red-400 hover:text-red-300 text-xs">✕</button>
+    </div>`).join('');
+}
+function addEditSpec() {
+  const key   = document.getElementById('editSpecKey').value.trim();
+  const value = document.getElementById('editSpecValue').value.trim();
+  if (!key || !value) return;
+  editSpecs.push({ key, value });
+  document.getElementById('editSpecKey').value = '';
+  document.getElementById('editSpecValue').value = '';
+  renderEditSpecs();
+}
+function removeEditSpec(i) {
+  editSpecs.splice(i, 1);
+  renderEditSpecs();
+}
+
+function previewEditMedia() {
+  const mainUrl = document.getElementById('editProdImage').value.trim();
+  const mainPrev = document.getElementById('editMainImgPreview');
+  const mainEl   = document.getElementById('editMainImgEl');
+  if (mainUrl) { mainEl.src = mainUrl; mainPrev.classList.remove('hidden'); }
+  else { mainPrev.classList.add('hidden'); }
+
+  const galleryLines = document.getElementById('editProdImages').value.split('\n').map(l => l.trim()).filter(Boolean);
+  const galleryPrev  = document.getElementById('editGalleryPreview');
+  galleryPrev.innerHTML = galleryLines.map(url =>
+    `<img src="${url}" class="h-20 w-20 object-cover rounded bg-gray-900" onerror="this.style.opacity=0.3">`
+  ).join('');
+}
+
 function openProductEditModal(productId) {
   const product = window.adminProducts?.find(p => p._id === productId);
-  if (!product) {
-    alert('Product not found');
-    return;
-  }
+  if (!product) { alert('Product not found'); return; }
 
   currentEditProductId = productId;
   currentEditIsFeatured = false;
 
-  document.getElementById('editProdName').value = product.name || '';
-  document.getElementById('editProdBrand').value = product.brand || '';
-  document.getElementById('editProdImage').value = product.image || '';
-  document.getElementById('editProdPrice').value = product.price || '';
+  // Reset tabs to basics
+  document.querySelectorAll('.edit-tab').forEach((t, i) => { if (i === 0) t.classList.add('active-edit-tab'); else t.classList.remove('active-edit-tab'); });
+  document.querySelectorAll('.edit-tab-content').forEach((c, i) => { if (i === 0) c.classList.remove('hidden'); else c.classList.add('hidden'); });
+
+  // Basics
+  document.getElementById('editProdName').value          = product.name          || '';
+  document.getElementById('editProdBrand').value         = product.brand         || '';
+  document.getElementById('editProdSku').value           = product.sku           || '';
+  document.getElementById('editProdPrice').value         = product.price         || '';
   document.getElementById('editProdOriginalPrice').value = product.originalPrice || '';
-  document.getElementById('editProdDiscount').value = product.discount || '';
+  document.getElementById('editProdDiscount').value      = product.discount      || '';
+  document.getElementById('editProdTags').value          = (product.tags || []).join(', ');
+
+  // Media
+  document.getElementById('editProdImage').value  = product.image  || '';
+  document.getElementById('editProdImages').value = (product.images || []).join('\n');
+  document.getElementById('editMainImgPreview').classList.add('hidden');
+  document.getElementById('editGalleryPreview').innerHTML = '';
+
+  // Details
+  document.getElementById('editProdDescription').value  = product.description  || '';
+  document.getElementById('editProdWarranty').value     = product.warranty     || '';
+  document.getElementById('editProdReturnPolicy').value = product.returnPolicy || '';
+  editHighlights = [...(product.highlights || [])];
+  renderEditHighlights();
+
+  // Specs
+  editSpecs = (product.specifications || []).map(s => ({ key: s.key, value: s.value }));
+  renderEditSpecs();
+
+  // Logistics
+  document.getElementById('editProdStock').value = product.stock ?? 0;
 
   document.getElementById('productEditModal').classList.remove('hidden');
   document.getElementById('productEditModal').classList.add('flex');
@@ -2044,29 +2291,42 @@ function closeProductEditModal() {
 async function saveProductEdit() {
   if (!currentEditProductId) return;
 
-  const name = document.getElementById('editProdName').value.trim();
-  const brand = document.getElementById('editProdBrand').value.trim();
-  const image = document.getElementById('editProdImage').value.trim();
-  let price = parseFloat(document.getElementById('editProdPrice').value);
+  const name          = document.getElementById('editProdName').value.trim();
+  const brand         = document.getElementById('editProdBrand').value.trim();
+  const sku           = document.getElementById('editProdSku').value.trim();
+  const image         = document.getElementById('editProdImage').value.trim();
+  const imagesRaw     = document.getElementById('editProdImages').value.split('\n').map(l => l.trim()).filter(Boolean);
+  let   price         = parseFloat(document.getElementById('editProdPrice').value);
   const originalPrice = parseFloat(document.getElementById('editProdOriginalPrice').value) || undefined;
-  const discount = parseFloat(document.getElementById('editProdDiscount').value) || undefined;
+  const discount      = parseFloat(document.getElementById('editProdDiscount').value) || undefined;
+  const tagsRaw       = document.getElementById('editProdTags').value;
+  const tags          = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
+  const description   = document.getElementById('editProdDescription').value.trim();
+  const warranty      = document.getElementById('editProdWarranty').value.trim();
+  const returnPolicy  = document.getElementById('editProdReturnPolicy').value.trim();
+  const stock         = parseInt(document.getElementById('editProdStock').value) || 0;
 
-  // Auto-calculate price if original price and discount are provided
   if (isNaN(price) && originalPrice && discount) {
     price = +(originalPrice * (1 - discount / 100)).toFixed(2);
     document.getElementById('editProdPrice').value = price;
   }
 
   if (!name || !brand || !image || isNaN(price) || price <= 0) {
-    alert('Please fill in all required fields');
+    alert('Name, Brand, Image and Sell Price are required');
     return;
   }
 
-  const body = { name, brand, price, image };
+  const body = {
+    name, brand, sku, price, image,
+    images: imagesRaw,
+    tags, description, warranty, returnPolicy, stock,
+    highlights: editHighlights,
+    specifications: editSpecs
+  };
   if (originalPrice) body.originalPrice = originalPrice;
-  if (discount) body.discount = discount;
+  if (discount)      body.discount      = discount;
 
-  const endpoint = currentEditIsFeatured 
+  const endpoint = currentEditIsFeatured
     ? `${API_BASE}/featured-products/${currentEditProductId}`
     : `${API_BASE}/products/${currentEditProductId}`;
 
@@ -2080,11 +2340,7 @@ async function saveProductEdit() {
     if (res.ok) {
       alert('Product updated successfully!');
       closeProductEditModal();
-      if (currentEditIsFeatured) {
-        loadAdminFeatured();
-      } else {
-        loadAdminProducts();
-      }
+      currentEditIsFeatured ? loadAdminFeatured() : loadAdminProducts();
     } else {
       const data = await res.json();
       alert(data.error || 'Failed to update product');
@@ -2171,33 +2427,105 @@ async function saveFeaturedEdit() {
   if (originalPrice) body.originalPrice = originalPrice;
   if (discount) body.discount = discount;
 
-  const endpoint = currentEditIsFeatured 
-    ? `${API_BASE}/featured-products/${currentEditProductId}`
-    : `${API_BASE}/products/${currentEditProductId}`;
-
   try {
-    const res = await fetch(endpoint, {
+    const res = await fetch(`${API_BASE}/featured-products/${currentEditFeaturedId}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(body)
     });
 
     if (res.ok) {
-      alert('Product updated successfully!');
-      closeProductEditModal();
-      if (currentEditIsFeatured) {
-        loadAdminFeatured();
-      } else {
-        loadAdminProducts();
-      }
+      msgEl.textContent = 'Updated successfully!';
+      msgEl.className   = 'text-xs text-green-400 text-center';
+      msgEl.classList.remove('hidden');
+      setTimeout(() => { closeFeaturedEditModal(); loadAdminFeatured(); }, 800);
     } else {
       const data = await res.json();
-      alert(data.error || 'Failed to update product');
+      msgEl.textContent = data.error || 'Failed to update product';
+      msgEl.className   = 'text-xs text-red-400 text-center';
+      msgEl.classList.remove('hidden');
     }
   } catch (err) {
-    console.error('Error updating product:', err);
-    alert('Error updating product');
+    console.error('Error updating featured product:', err);
+    msgEl.textContent = 'Error updating product';
+    msgEl.className   = 'text-xs text-red-400 text-center';
+    msgEl.classList.remove('hidden');
   }
+}
+
+/* =============================================
+   FEATURED CATEGORY EDITING (via existing modal)
+   ============================================= */
+let currentEditFeaturedProductId = null;
+
+async function openFeaturedCategoryEditModal(productId) {
+  const product = (window.adminFeatured || []).find(p => p._id === productId);
+  if (!product) {
+    alert('Featured product not found');
+    return;
+  }
+
+  currentEditFeaturedProductId = productId;
+  currentEditProductId = null; // clear regular product ID
+  selectedEditSubcategories = [];
+  document.getElementById('editProductName').textContent = product.name + ' (Featured)';
+
+  if (allCategories.length === 0) await loadCategories();
+
+  currentEditCategories = product.categories || [];
+  renderCurrentCategories();
+
+  if (currentEditCategories.length > 0) {
+    showEditSubcategories(currentEditCategories[0]._id || currentEditCategories[0]);
+  }
+
+  // Override save to target featured endpoint
+  document.querySelector('#categoryEditModal .flex button:last-child').onclick = saveFeaturedProductCategories;
+
+  document.getElementById('categoryEditModal').classList.remove('hidden');
+  document.getElementById('categoryEditModal').classList.add('flex');
+}
+
+async function saveFeaturedProductCategories() {
+  if (!currentEditFeaturedProductId) return;
+
+  const categoryIds = currentEditCategories.map(c => {
+    const id = typeof c === 'object' ? c._id : c;
+    return id.toString();
+  });
+
+  const subCategories = selectedEditSubcategories.map(key => {
+    const [catId, subName] = key.split(':');
+    const cat = allCategories.find(c => c._id.toString() === catId);
+    return cat ? `${cat.name}:${subName}` : key;
+  });
+
+  try {
+    const res = await fetch(`${API_BASE}/featured-products/${currentEditFeaturedProductId}/categories`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ categories: categoryIds, selectedSubcategories: subCategories })
+    });
+
+    if (res.ok) {
+      await loadAdminFeatured();
+      closeFeaturedCategoryEditModal();
+      alert('Categories updated successfully!');
+    } else {
+      const error = await res.json();
+      alert('Failed to update categories: ' + (error.error || 'Unknown error'));
+    }
+  } catch (err) {
+    console.error('Error:', err);
+    alert('Failed to update categories');
+  }
+}
+
+function closeFeaturedCategoryEditModal() {
+  // Restore original save handler
+  document.querySelector('#categoryEditModal .flex button:last-child').onclick = saveProductCategories;
+  closeCategoryEditModal();
+  currentEditFeaturedProductId = null;
 }
 
 /* INIT */
@@ -2539,45 +2867,140 @@ initApp();
   </div>
 </div>
 
-<!-- PRODUCT EDIT MODAL -->
+<!-- PRODUCT EDIT MODAL — full detail editor -->
 <div id="productEditModal" class="fixed inset-0 z-[300] hidden items-center justify-center bg-black/70 backdrop-blur-sm">
-  <div class="bg-gray-800 border border-gray-600 rounded-2xl p-6 w-full max-w-lg mx-4 relative max-h-[90vh] overflow-y-auto">
-    <button onclick="closeProductEditModal()" class="absolute top-4 right-5 text-gray-400 hover:text-white text-xl">✕</button>
-    <h2 class="text-2xl font-bold mb-4 text-blue-400">✏️ Edit Product</h2>
-    <div class="space-y-4">
-      <div>
-        <label class="block text-sm font-medium text-gray-300 mb-1">Product Name</label>
-        <input id="editProdName" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500">
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-300 mb-1">Brand</label>
-        <input id="editProdBrand" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500">
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-300 mb-1">Image URL</label>
-        <input id="editProdImage" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500">
-      </div>
-      <div class="grid grid-cols-3 gap-3">
+  <div class="bg-gray-800 border border-gray-600 rounded-2xl w-full max-w-3xl mx-4 relative flex flex-col" style="max-height:92vh">
+    <div class="flex items-center justify-between p-6 border-b border-gray-700 flex-shrink-0">
+      <h2 class="text-2xl font-bold text-blue-400">✏️ Edit Product</h2>
+      <button onclick="closeProductEditModal()" class="text-gray-400 hover:text-white text-xl">✕</button>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="flex gap-1 px-6 pt-4 border-b border-gray-700 flex-shrink-0 overflow-x-auto">
+      <button onclick="switchEditTab('basics')"    class="edit-tab active-edit-tab px-4 py-2 rounded-t-lg text-sm font-semibold whitespace-nowrap">Basics</button>
+      <button onclick="switchEditTab('media')"     class="edit-tab px-4 py-2 rounded-t-lg text-sm font-semibold whitespace-nowrap">🖼 Media</button>
+      <button onclick="switchEditTab('details')"   class="edit-tab px-4 py-2 rounded-t-lg text-sm font-semibold whitespace-nowrap">📋 Details</button>
+      <button onclick="switchEditTab('specs')"     class="edit-tab px-4 py-2 rounded-t-lg text-sm font-semibold whitespace-nowrap">⚙️ Specs</button>
+      <button onclick="switchEditTab('logistics')" class="edit-tab px-4 py-2 rounded-t-lg text-sm font-semibold whitespace-nowrap">📦 Logistics</button>
+    </div>
+
+    <div class="overflow-y-auto flex-1 p-6">
+
+      <!-- TAB: BASICS -->
+      <div id="editTab-basics" class="edit-tab-content space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div class="col-span-2">
+            <label class="block text-sm font-medium text-gray-300 mb-1">Product Name <span class="text-red-400">*</span></label>
+            <input id="editProdName" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Brand <span class="text-red-400">*</span></label>
+            <input id="editProdBrand" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">SKU / Product Code</label>
+            <input id="editProdSku" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500" placeholder="e.g. WH-XM5-BLK">
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">MSRP / Original (₹)</label>
+            <input id="editProdOriginalPrice" type="number" min="0" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500" oninput="calculateEditPrice()">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Sell Price (₹) <span class="text-red-400">*</span></label>
+            <input id="editProdPrice" type="number" min="0" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Discount %</label>
+            <input id="editProdDiscount" type="number" min="0" max="100" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500" oninput="calculateEditPrice()">
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 -mt-2">Price auto-calculates when MSRP + Discount are entered</p>
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Price (₹)</label>
-          <input id="editProdPrice" type="number" min="0" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-sm font-medium text-gray-300 mb-1">Tags <span class="text-gray-500 font-normal">— comma separated</span></label>
+          <input id="editProdTags" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500" placeholder="wireless, noise cancelling, premium">
+        </div>
+      </div>
+
+      <!-- TAB: MEDIA -->
+      <div id="editTab-media" class="edit-tab-content hidden space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Main Image URL <span class="text-red-400">*</span></label>
+          <input id="editProdImage" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500" placeholder="https://...">
+          <div id="editMainImgPreview" class="mt-2 hidden"><img class="h-32 rounded-lg object-contain bg-gray-900 p-1" id="editMainImgEl"></div>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Original Price</label>
-          <input id="editProdOriginalPrice" type="number" min="0" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500" oninput="calculateEditPrice()">
+          <label class="block text-sm font-medium text-gray-300 mb-1">Gallery Images <span class="text-gray-500 font-normal">— one URL per line</span></label>
+          <textarea id="editProdImages" rows="5" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500 text-sm font-mono" placeholder="https://example.com/img1.jpg&#10;https://example.com/img2.jpg"></textarea>
+          <p class="text-xs text-gray-400 mt-1">First image is the main; these are shown in the gallery on the product page</p>
+          <div id="editGalleryPreview" class="flex flex-wrap gap-2 mt-2"></div>
+        </div>
+        <button type="button" onclick="previewEditMedia()" class="text-xs text-blue-400 underline">Preview images</button>
+      </div>
+
+      <!-- TAB: DETAILS -->
+      <div id="editTab-details" class="edit-tab-content hidden space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Description</label>
+          <textarea id="editProdDescription" rows="6" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500 text-sm" placeholder="Full product description shown on the product page..."></textarea>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-1">Discount %</label>
-          <input id="editProdDiscount" type="number" min="0" max="100" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500" oninput="calculateEditPrice()">
+          <label class="block text-sm font-medium text-gray-300 mb-2">Highlights <span class="text-gray-500 font-normal">— key bullet points</span></label>
+          <div id="editHighlightsList" class="space-y-2 mb-2"></div>
+          <div class="flex gap-2">
+            <input id="editHighlightInput" type="text" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500" placeholder="e.g. 30-hour battery life" onkeypress="if(event.key==='Enter')addEditHighlight()">
+            <button onclick="addEditHighlight()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm">+ Add</button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Warranty</label>
+          <input id="editProdWarranty" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500" placeholder="e.g. 1 Year Manufacturer Warranty">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Return Policy</label>
+          <input id="editProdReturnPolicy" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500" placeholder="e.g. 10-day easy returns">
         </div>
       </div>
-      <p class="text-xs text-gray-400 -mt-2">Price auto-calculates when discount is entered</p>
-      <button onclick="saveProductEdit()" class="w-full bg-gradient-to-r from-blue-500 to-violet-500 hover:from-blue-600 hover:to-violet-600 text-white font-bold py-3 rounded-lg transition">
-        Save Changes
-      </button>
+
+      <!-- TAB: SPECS -->
+      <div id="editTab-specs" class="edit-tab-content hidden">
+        <p class="text-xs text-gray-400 mb-3">These appear as a specification table on the product page (e.g. Color, RAM, Weight).</p>
+        <div id="editSpecsList" class="space-y-2 mb-3"></div>
+        <div class="flex gap-2">
+          <input id="editSpecKey"   type="text" placeholder="Spec name (e.g. Color)"  class="flex-1 bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500" onkeypress="if(event.key==='Enter')addEditSpec()">
+          <input id="editSpecValue" type="text" placeholder="Value (e.g. Matte Black)" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg p-2 text-white text-sm focus:outline-none focus:border-blue-500" onkeypress="if(event.key==='Enter')addEditSpec()">
+          <button onclick="addEditSpec()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm">+ Add</button>
+        </div>
+        <p class="text-xs text-gray-400 mt-2">Tip: drag rows to reorder (coming soon)</p>
+      </div>
+
+      <!-- TAB: LOGISTICS -->
+      <div id="editTab-logistics" class="edit-tab-content hidden space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Stock Quantity</label>
+            <input id="editProdStock" type="number" min="0" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500" placeholder="0">
+            <p class="text-xs text-gray-400 mt-1">Set to 0 to mark as out of stock</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end scroll area -->
+
+    <div class="border-t border-gray-700 p-6 flex gap-3 flex-shrink-0">
+      <button onclick="closeProductEditModal()" class="flex-1 py-3 rounded-lg font-bold text-sm bg-gray-700 hover:bg-gray-600 transition">Cancel</button>
+      <button onclick="saveProductEdit()" class="flex-1 bg-gradient-to-r from-blue-500 to-violet-500 hover:from-blue-600 hover:to-violet-600 text-white font-bold py-3 rounded-lg transition">Save Changes</button>
     </div>
   </div>
 </div>
+
+<style>
+.edit-tab { color: #9b93c4; transition: all 0.2s; border-bottom: 3px solid transparent; }
+.edit-tab:hover { color: #f0eeff; }
+.active-edit-tab { color: #60a5fa; border-bottom: 3px solid #60a5fa; }
+.edit-tab-content { }
+</style>
 
 </body>
 </html>
