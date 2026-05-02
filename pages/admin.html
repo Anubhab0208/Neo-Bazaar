@@ -1967,6 +1967,137 @@ function featCalcFromDiscount() {
    ============================================= */
 let currentEditFeaturedId = null;
 
+/* =============================================
+   PRODUCT EDIT FUNCTIONS (for both regular & featured)
+   ============================================= */
+// Note: currentEditProductId is already declared above for category editing
+let currentEditIsFeatured = false;
+
+function calculateEditPrice() {
+  const msrp     = parseFloat(document.getElementById('editProdOriginalPrice').value);
+  let   discount = parseFloat(document.getElementById('editProdDiscount').value);
+  if (discount < 0) { discount = 0; document.getElementById('editProdDiscount').value = 0; }
+  if (discount > 100) { discount = 100; document.getElementById('editProdDiscount').value = 100; }
+  if (!isNaN(msrp) && !isNaN(discount)) {
+    const sell = +(msrp * (1 - discount / 100)).toFixed(2);
+    document.getElementById('editProdPrice').value = sell > 0 ? sell : 0;
+  }
+}
+
+function openProductEditModal(productId) {
+  const product = window.adminProducts?.find(p => p._id === productId);
+  if (!product) {
+    alert('Product not found');
+    return;
+  }
+
+  currentEditProductId = productId;
+  currentEditIsFeatured = false;
+
+  document.getElementById('editProdName').value = product.name || '';
+  document.getElementById('editProdBrand').value = product.brand || '';
+  document.getElementById('editProdImage').value = product.image || '';
+  document.getElementById('editProdPrice').value = product.price || '';
+  document.getElementById('editProdOriginalPrice').value = product.originalPrice || '';
+  document.getElementById('editProdDiscount').value = product.discount || '';
+
+  document.getElementById('productEditModal').classList.remove('hidden');
+  document.getElementById('productEditModal').classList.add('flex');
+}
+
+async function openFeaturedProductEditModal(productId) {
+  try {
+    const res = await fetch(`${API_BASE}/featured-products`);
+    const featured = await res.json();
+    const product = featured.find(p => p._id === productId);
+
+    if (!product) {
+      alert('Featured product not found');
+      return;
+    }
+
+    currentEditProductId = productId;
+    currentEditIsFeatured = true;
+
+    document.getElementById('editProdName').value = product.name || '';
+    document.getElementById('editProdBrand').value = product.brand || '';
+    document.getElementById('editProdImage').value = product.image || '';
+    document.getElementById('editProdPrice').value = product.price || '';
+    document.getElementById('editProdOriginalPrice').value = product.originalPrice || '';
+    document.getElementById('editProdDiscount').value = product.discount || '';
+
+    document.getElementById('productEditModal').classList.remove('hidden');
+    document.getElementById('productEditModal').classList.add('flex');
+  } catch (err) {
+    console.error('Error fetching featured product:', err);
+    alert('Error loading featured product');
+  }
+}
+
+function closeProductEditModal() {
+  document.getElementById('productEditModal').classList.add('hidden');
+  document.getElementById('productEditModal').classList.remove('flex');
+  currentEditProductId = null;
+  currentEditIsFeatured = false;
+}
+
+async function saveProductEdit() {
+  if (!currentEditProductId) return;
+
+  const name = document.getElementById('editProdName').value.trim();
+  const brand = document.getElementById('editProdBrand').value.trim();
+  const image = document.getElementById('editProdImage').value.trim();
+  let price = parseFloat(document.getElementById('editProdPrice').value);
+  const originalPrice = parseFloat(document.getElementById('editProdOriginalPrice').value) || undefined;
+  const discount = parseFloat(document.getElementById('editProdDiscount').value) || undefined;
+
+  // Auto-calculate price if original price and discount are provided
+  if (isNaN(price) && originalPrice && discount) {
+    price = +(originalPrice * (1 - discount / 100)).toFixed(2);
+    document.getElementById('editProdPrice').value = price;
+  }
+
+  if (!name || !brand || !image || isNaN(price) || price <= 0) {
+    alert('Please fill in all required fields');
+    return;
+  }
+
+  const body = { name, brand, price, image };
+  if (originalPrice) body.originalPrice = originalPrice;
+  if (discount) body.discount = discount;
+
+  const endpoint = currentEditIsFeatured 
+    ? `${API_BASE}/featured-products/${currentEditProductId}`
+    : `${API_BASE}/products/${currentEditProductId}`;
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(body)
+    });
+
+    if (res.ok) {
+      alert('Product updated successfully!');
+      closeProductEditModal();
+      if (currentEditIsFeatured) {
+        loadAdminFeatured();
+      } else {
+        loadAdminProducts();
+      }
+    } else {
+      const data = await res.json();
+      alert(data.error || 'Failed to update product');
+    }
+  } catch (err) {
+    console.error('Error updating product:', err);
+    alert('Error updating product');
+  }
+}
+
+/* =============================================
+   FEATURED PRODUCT EDIT MODAL (separate modal)
+   ============================================= */
 function openFeaturedEditModal(productId) {
   const product = (window.adminFeatured || []).find(p => p._id === productId);
   if (!product) { alert('Product not found'); return; }

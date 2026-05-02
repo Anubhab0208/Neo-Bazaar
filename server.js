@@ -448,7 +448,6 @@ app.post("/api/featured-products", adminAuth, async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
 // ADMIN UPDATE FEATURED PRODUCT
 app.put("/api/featured-products/:id", adminAuth, async (req, res) => {
   try {
@@ -471,43 +470,6 @@ app.put("/api/featured-products/:id", adminAuth, async (req, res) => {
     res.json({ success: true, product });
   } catch (err) {
     res.status(500).json({ error: err.message });
-=======
-// ADMIN EDIT FEATURED PRODUCT
-app.put("/api/featured-products/:id", adminAuth, async (req, res) => {
-  try {
-    const { name, brand, price, image, originalPrice, discount } = req.body;
-    if (!name || !brand || !price || !image) {
-      return res.status(400).json({ success: false, error: "Missing required fields" });
-    }
-
-    const update = { name, brand, price: Number(price), image };
-    if (originalPrice !== undefined && originalPrice !== '') {
-      update.originalPrice = Number(originalPrice);
-    } else {
-      update.$unset = { originalPrice: 1 };
-    }
-    if (discount !== undefined && discount !== '') {
-      update.discount = Math.max(0, Math.min(100, Number(discount)));
-    } else {
-      if (!update.$unset) update.$unset = {};
-      update.$unset.discount = 1;
-    }
-
-    // Separate $unset from the main update fields
-    const setFields = { name: update.name, brand: update.brand, price: update.price, image: update.image };
-    if (update.originalPrice !== undefined) setFields.originalPrice = update.originalPrice;
-    if (update.discount !== undefined) setFields.discount = update.discount;
-
-    const op = { $set: setFields };
-    if (update.$unset) op.$unset = update.$unset;
-
-    const product = await FeaturedProduct.findByIdAndUpdate(req.params.id, op, { new: true });
-    if (!product) return res.status(404).json({ success: false, error: "Product not found" });
-
-    res.json({ success: true, product });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
->>>>>>> 8941fc787d1b766a8ea1a54be58536df02e99890
   }
 });
 
