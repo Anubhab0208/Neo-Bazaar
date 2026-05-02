@@ -177,17 +177,14 @@ async function loadOrders() {
   }
 
   try {
-    // Fetch orders from database by user email (with cache-busting)
-    const res = await fetch(`${BASE}/api/orders/user/${encodeURIComponent(userEmail)}?t=${Date.now()}`, {
-      headers: { 'Cache-Control': 'no-cache' }
-    });
+    // Fetch orders from database by user email
+    const res = await fetch(`${BASE}/api/orders/user/${encodeURIComponent(userEmail)}`);
     
     if (!res.ok) {
       throw new Error("Failed to fetch orders");
     }
     
     const orders = await res.json();
-    console.log("Fetched orders:", orders);
     
     if (!orders || orders.length === 0) {
       container.innerHTML = `<p class="empty">No orders yet</p>`;
@@ -197,7 +194,6 @@ async function loadOrders() {
     // Clear container and render all orders from database
     container.innerHTML = '';
     orders.forEach(order => {
-      console.log("Order status:", order._id, order.status);
       const orderCard = renderOrderCard(order);
       container.innerHTML += orderCard;
     });
@@ -218,27 +214,23 @@ function renderOrderCard(order) {
   const id = order._id || order.orderId;
   const orderId = id ? '#' + id.toString().substring(0, 8).toUpperCase() : '#NB' + Math.floor(Math.random() * 100000);
   const total = Number(order.total || 0).toLocaleString();
-  const status = (order.status || 'Placed').trim();
+  const status = order.status || 'Placed';
   
-  console.log("Rendering order:", orderId, "Raw status:", order.status, "Processed status:", status);
+  const statusClass = status === 'Delivered' ? 'status-delivered' : 
+                      status === 'Shipped' ? 'status-shipped' : 
+                      status === 'Cancelled' ? 'status-cancelled' : 'status-placed';
   
-  const statusLower = status.toLowerCase();
-  const statusClass = statusLower === 'delivered' ? 'status-delivered' : 
-                      statusLower === 'shipped' ? 'status-shipped' : 
-                      statusLower === 'cancelled' || statusLower === 'canceled' ? 'status-cancelled' : 'status-placed';
-  
-  console.log("Status class assigned:", statusClass);
-  
-  const deliveryText = statusLower === 'placed' ? '📦 Processing' : 
-                       statusLower === 'shipped' ? '🚚 Out for Delivery' : 
-                       statusLower === 'delivered' ? '✅ Delivered' : 
-                       statusLower === 'cancelled' || statusLower === 'canceled' ? '❌ Cancelled' : status;
+  const deliveryText = status === 'Placed' ? '📦 Processing' : 
+                       status === 'Shipped' ? '🚚 Out for Delivery' : 
+                       status === 'Delivered' ? '✅ Delivered' : status;
 
   // Payment method and status
   const paymentMethod = order.paymentMethod || 'cod';
   const isCOD = paymentMethod === 'cod' || paymentMethod === 'Cash on Delivery';
-  const paymentStatusText = isCOD ? '❌ Not Paid' : '✅ Paid';
-  const paymentStatusColor = isCOD ? '#dc2626' : '#16a34a';
+  // For COD: Paid only when Delivered, Not Paid when Placed or Shipped
+  const isCODPaid = isCOD && status === 'Delivered';
+  const paymentStatusText = (isCOD && !isCODPaid) ? '❌ Not Paid' : '✅ Paid';
+  const paymentStatusColor = (isCOD && !isCODPaid) ? '#dc2626' : '#16a34a';
   const paymentMethodLabels = { cod: 'Cash on Delivery', upi: 'UPI', card: 'Credit / Debit Card' };
   const paymentMethodDisplay = paymentMethodLabels[paymentMethod] || paymentMethod;
 
@@ -297,14 +289,6 @@ function goHome(){
 
 // Load orders on page load
 loadOrders();
-
-// Auto-refresh when page becomes visible (switching tabs)
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) {
-    console.log("Page visible, refreshing orders...");
-    loadOrders();
-  }
-});
 </script>
 
 </body>

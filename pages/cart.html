@@ -121,9 +121,10 @@
 
 <body>
 
+
 <nav>
   <a href="../index.html" class="nav-logo">Neo-Bazaar</a>
-  <a href="../index.html" style="color:var(--muted); text-decoration:none;">← Continue Shopping</a>
+  <a href="../index.html" onclick="localStorage.setItem('cart', JSON.stringify(cart)); window.location.replace('../index.html'); return false;" style="color:var(--muted); text-decoration:none;">← Continue Shopping</a>
 </nav>
 
 <div class="container">
@@ -142,7 +143,14 @@
 </div>
 
 <script>
-let cart = JSON.parse(localStorage.getItem("cart")) || [];
+let cart = [];
+
+function loadCart() {
+  cart = JSON.parse(localStorage.getItem("cart")) || [];
+  renderCart();
+}
+
+
 
 function renderCart() {
   const container = document.getElementById("cartItems");
@@ -150,9 +158,9 @@ function renderCart() {
 
   if (!cart.length) {
     container.innerHTML = `<p class="empty">Your cart is empty</p>`;
+    document.getElementById("totalPrice").innerText = "₹0";
     return;
   }
-
   let total = 0;
 
   cart.forEach((item, index) => {
@@ -217,22 +225,37 @@ function changeQty(index, change) {
     cart.splice(index, 1);
   }
   localStorage.setItem("cart", JSON.stringify(cart));
-  window.dispatchEvent(new Event("storage"));
+  localStorage.setItem("cartUpdated", Date.now());
   renderCart();
 }
 
 function removeItem(index) {
   cart.splice(index, 1);
   localStorage.setItem("cart", JSON.stringify(cart));
-  window.dispatchEvent(new Event("storage"));
+  localStorage.setItem("cartUpdated", Date.now());
   renderCart();
 }
 
-renderCart();
+loadCart();
+document.addEventListener("DOMContentLoaded", loadCart);
+
+window.addEventListener("unload", () => {
+  localStorage.setItem("cart", JSON.stringify(cart));
+});
+
 function goToCheckout() {
+  if (!cart.length) {
+    alert("Your cart is empty!");
+    return;
+  }
   localStorage.setItem("cart", JSON.stringify(cart));
   window.location.href = "checkout.html";
 }
+
+window.addEventListener("beforeunload", () => {
+      localStorage.setItem("cart", JSON.stringify(cart));
+      localStorage.setItem("cartUpdated", Date.now());
+    });
 </script>
 
 </body>
