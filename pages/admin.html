@@ -156,6 +156,9 @@
       <button onclick="switchTab('orders')" class="nav-tab text-sm md:text-base">
         Orders
       </button>
+      <button onclick="switchTab('promo')" class="nav-tab text-sm md:text-base">
+        Promo Codes
+      </button>
     </div>
   </nav>
 
@@ -315,6 +318,42 @@
       <h2 class="text-2xl font-bold mb-6 text-blue-400">Order Management</h2>
       <div id="ordersList" class="space-y-4">
         <p class="text-gray-400 text-center py-12">Loading orders...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROMO CODES TAB -->
+  <div id="promo-tab" class="tab-content">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 items-start">
+      <!-- Add Promo Code Form -->
+      <div class="lg:col-span-1">
+        <div class="bg-gray-800 rounded-xl shadow-lg border border-gray-700 p-6 sticky top-40">
+          <h3 class="text-xl font-bold mb-4 text-pink-400">Add Promo Code</h3>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Code</label>
+              <input id="promoCode" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-pink-500 uppercase" placeholder="e.g., SAVE20">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Discount Percentage</label>
+              <input id="promoPercent" type="number" min="1" max="100" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-pink-500" placeholder="e.g., 20">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Description (optional)</label>
+              <input id="promoDesc" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-pink-500" placeholder="e.g., 20% off your order">
+            </div>
+            <button onclick="addPromoCode()" class="w-full bg-gradient-to-r from-pink-500 to-violet-500 hover:from-pink-600 hover:to-violet-600 text-white font-bold py-3 rounded-lg transition">
+              Add Promo Code
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Promo Codes Grid -->
+      <div class="lg:col-span-2">
+        <h2 class="text-2xl font-bold mb-6 text-pink-400">Active Promo Codes</h2>
+        <div id="promoCodesGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <p class="text-gray-400 col-span-full text-center py-8">Loading promo codes...</p>
+        </div>
       </div>
     </div>
   </div>
@@ -1403,12 +1442,125 @@ function initApp() {
     loadCategories();
     loadComplaints();
     loadOrders();
+    loadPromoCodes();
 
     setInterval(loadComplaints, 10000);
     setInterval(loadOrders, 15000);
   } else {
     document.getElementById("loginOverlay").style.display = "flex";
   }
+}
+
+/* PROMO CODES MANAGEMENT */
+// Store promo codes in localStorage for persistence
+function getPromoCodes() {
+  const stored = localStorage.getItem('promoCodes');
+  return stored ? JSON.parse(stored) : [
+    { code: 'NEODROP10', percent: 15, desc: '15% off your order' },
+    { code: 'SAVE5', percent: 5, desc: '5% off' },
+    { code: 'MEGADEAL', percent: 50, desc: '50% off mega deal' },
+    { code: 'FLASH90', percent: 90, desc: '90% off flash sale' },
+    { code: 'WELCOME20', percent: 20, desc: '20% off welcome discount' },
+    { code: 'FIRSTBUY', percent: 25, desc: '25% off first purchase' }
+  ];
+}
+
+function savePromoCodes(codes) {
+  localStorage.setItem('promoCodes', JSON.stringify(codes));
+}
+
+function loadPromoCodes() {
+  const container = document.getElementById('promoCodesGrid');
+  const codes = getPromoCodes();
+
+  if (!codes.length) {
+    container.innerHTML = '<p class="text-gray-400 col-span-full text-center py-8">No promo codes yet</p>';
+    return;
+  }
+
+  container.innerHTML = codes.map((p, idx) => `
+    <div class="bg-gray-700 border border-gray-600 rounded-lg p-4 hover:border-pink-500 transition">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-2xl font-bold text-pink-400">${p.code}</span>
+        <span class="text-3xl font-bold text-green-400">${p.percent}%</span>
+      </div>
+      <p class="text-gray-300 text-sm mb-4">${p.desc || 'No description'}</p>
+      <div class="flex gap-2">
+        <button onclick="editPromoCode(${idx})" class="flex-1 bg-violet-600 hover:bg-violet-700 text-white px-3 py-2 rounded text-sm transition">
+          Edit
+        </button>
+        <button onclick="deletePromoCode(${idx})" class="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition">
+          Delete
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addPromoCode() {
+  const codeInput = document.getElementById('promoCode');
+  const percentInput = document.getElementById('promoPercent');
+  const descInput = document.getElementById('promoDesc');
+
+  const code = codeInput.value.trim().toUpperCase();
+  const percent = parseInt(percentInput.value);
+  const desc = descInput.value.trim();
+
+  if (!code || !percent || percent < 1 || percent > 100) {
+    alert('Please enter a valid code and percentage (1-100)');
+    return;
+  }
+
+  const codes = getPromoCodes();
+
+  // Check if code already exists
+  if (codes.some(c => c.code === code)) {
+    alert('Promo code already exists!');
+    return;
+  }
+
+  codes.push({ code, percent, desc });
+  savePromoCodes(codes);
+
+  // Clear inputs
+  codeInput.value = '';
+  percentInput.value = '';
+  descInput.value = '';
+
+  loadPromoCodes();
+  alert('Promo code added successfully!');
+}
+
+function deletePromoCode(index) {
+  if (!confirm('Delete this promo code?')) return;
+
+  const codes = getPromoCodes();
+  codes.splice(index, 1);
+  savePromoCodes(codes);
+  loadPromoCodes();
+}
+
+function editPromoCode(index) {
+  const codes = getPromoCodes();
+  const promo = codes[index];
+
+  const newPercent = prompt(`Edit discount percentage for ${promo.code}:`, promo.percent);
+  if (newPercent === null) return;
+
+  const percent = parseInt(newPercent);
+  if (isNaN(percent) || percent < 1 || percent > 100) {
+    alert('Please enter a valid percentage (1-100)');
+    return;
+  }
+
+  const newDesc = prompt(`Edit description for ${promo.code}:`, promo.desc || '');
+  if (newDesc === null) return;
+
+  codes[index].percent = percent;
+  codes[index].desc = newDesc.trim();
+  savePromoCodes(codes);
+  loadPromoCodes();
+  alert('Promo code updated!');
 }
 
 initApp();

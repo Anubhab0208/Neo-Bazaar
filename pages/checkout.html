@@ -340,19 +340,56 @@
     el.value = v;
   }
 
+  // Get discount codes from localStorage (set by admin)
+  function getDiscountCodes() {
+    const stored = localStorage.getItem('promoCodes');
+    if (stored) {
+      const codes = JSON.parse(stored);
+      const result = {};
+      codes.forEach(c => {
+        result[c.code] = { rate: c.percent / 100, name: `${c.percent}% off` };
+      });
+      return result;
+    }
+    // Default codes if none in storage
+    return {
+      'NEODROP10': { rate: 0.15, name: '15% off' },
+      'SAVE5': { rate: 0.05, name: '5% off' },
+      'MEGADEAL': { rate: 0.50, name: '50% off' },
+      'FLASH90': { rate: 0.90, name: '90% off' },
+      'WELCOME20': { rate: 0.20, name: '20% off' },
+      'FIRSTBUY': { rate: 0.25, name: '25% off first purchase' }
+    };
+  }
+
+  let appliedPromoCode = '';
+
   function applyPromo() {
     const code = document.getElementById("promoInput").value.trim().toUpperCase();
-    if (code === "NEODROP10") {
-      discountRate = 0.15;
-      showError("🎉 Promo applied! Extra 15% off!", "success");
-    } else if (code === "SAVE5") {
-      discountRate = 0.05;
-      showError("Promo applied! 5% off.", "success");
-    } else {
-      showError("Invalid promo code. Try NEODROP10");
+    const DISCOUNT_CODES = getDiscountCodes();
+    const discount = DISCOUNT_CODES[code];
+
+    if (!discount) {
+      showError("Invalid promo code. Try NEODROP10, MEGADEAL, or FLASH90");
       return;
     }
+
+    discountRate = discount.rate;
+    appliedPromoCode = code;
+    showError(`🎉 ${discount.name} applied!`, "success");
     updateTotals();
+    updateDiscountLabel();
+  }
+
+  function updateDiscountLabel() {
+    const label = document.querySelector('.summary-row:nth-child(3) span:first-child');
+    if (label && appliedPromoCode) {
+      const DISCOUNT_CODES = getDiscountCodes();
+      const discount = DISCOUNT_CODES[appliedPromoCode];
+      if (discount) {
+        label.textContent = `Discount (${discount.name})`;
+      }
+    }
   }
 
   function showError(msg, type = "error") {
