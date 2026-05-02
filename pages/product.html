@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Details - Neo Bazaar</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dark: '#0a0a0a',
+            card: '#141414',
+            orange: {
+              400: '#ff6b35',
+              500: '#f59e0b'
+            },
+            violet: {
+              400: '#a78bfa',
+              500: '#8b5cf6'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap');
+    
+    :root {
+      --bg-primary: #07060f;
+      --bg-secondary: #0f0d1a;
+      --text-primary: #f0eeff;
+      --text-secondary: #9b93c4;
+      --text-muted: #5c5480;
+    }
+    
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+    
+    h1, h2, h3, .heading { font-family: 'Syne', sans-serif; }
+    
+    .glass {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .grad-text {
+      background: linear-gradient(135deg, #8b5cf6 0%, #f59e0b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #7c3aed 0%, #f59e0b 100%);
+      color: white;
+      font-weight: 600;
+    }
+    
+    .dropdown-menu {
+      background: rgba(15, 13, 26, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+  </style>
+</head>
+<body class="text-white">
+  
+  <!-- NAVIGATION -->
+  <nav class="h-16 flex items-center px-6 md:px-12">
+    <a href="index.html" class="flex items-center gap-2">
+      <img src="../assets/img/NeoB_img.jpeg" class="w-20 h-20 object-contain">
+      <span class="heading text-xl font-extrabold tracking-tighter grad-text">Neo-Bazaar</span>
+    </a>
+    <div class="hidden md:flex ml-10 gap-6 text-sm font-medium text-gray-400">
+      <a href="index.html" class="hover:text-white transition">Home</a>
+      <a href="#" class="hover:text-white transition">Collections</a>
+      <a href="#" class="hover:text-white transition">New Drops</a>
+    </div>
+    <div class="ml-auto flex items-center gap-4">
+      <!-- Mobile Search Button -->
+      <button onclick="goSearch()" class="sm:hidden glass px-3 py-2 rounded-full text-sm" title="Search">
+        🔍
+      </button>
+      <!-- Desktop Search -->
+      <div class="relative hidden sm:flex items-center">
+        <input type="text" id="navSearch" placeholder="Search the bazaar..." class="glass rounded-full py-1.5 pl-10 pr-4 text-sm focus:outline-none w-64" onkeydown="if(event.key==='Enter') goSearch()">
+        <span class="absolute left-4 top-1.5">🔍</span>
+        <button onclick="goSearch()" class="btn-primary ml-2 px-4 py-1.5 rounded-full text-sm">Search</button>
+      </div>
+      <!-- DARK MODE -->
+      <button onclick="toggleTheme()" class="glass px-3 py-1 rounded-full text-sm">🌗</button>
+
+      <!-- USER DROPDOWN / AUTH -->
+      <div class="relative group" id="accountMenu">
+        <!-- Logged-out state -->
+        <button id="openAuthBtn" onclick="openAuth('login')" class="btn-primary px-5 py-1.5 rounded-full text-sm">Account</button>
+        <!-- Logged-in state (hidden until login) -->
+        <div id="userMenu" class="hidden group">
+          <button class="btn-primary px-5 py-1.5 rounded-full text-sm" id="userEmailBtn">Hi 👋</button>
+          <div class="absolute right-0 top-full pt-2 w-44 z-50">
+            <div class="rounded-xl shadow-xl dropdown-menu overflow-hidden hidden group-hover:block">
+              <p class="px-4 py-2 text-xs text-violet-300 truncate" id="loggedEmail"></p>
+              <hr class="border-white/10">
+              <a href="orders.html" class="block px-4 py-2 hover:bg-white/10 cursor-pointer text-[var(--text-primary)]">Orders</a>
+              <a class="block px-4 py-2 hover:bg-white/10 text-red-400 cursor-pointer" onclick="logout()">Logout</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CART (single icon) -->
+      <div class="relative group cursor-pointer" onclick="goToCart()">
+        <span class="text-xl">🛒</span>
+        <span id="cartCount" class="absolute -top-2 -right-2 bg-orange-500 text-[10px] px-1.5 rounded-full">0</span>
+        <div class="absolute right-0 mt-2 w-72 dropdown-menu rounded-xl p-4 hidden group-hover:block z-50">
+          <p class="text-sm font-bold mb-3">Cart</p>
+          <div id="cartItems"><p class="text-xs text-gray-400">Cart is empty</p></div>
+          <div id="cartTotal" class="hidden mt-3 border-t border-white/10 pt-3 flex justify-between text-sm font-bold">
+            <span>Total</span><span id="totalPrice" class="text-orange-400"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="pt-24 pb-16 px-6">
+    <div class="max-w-6xl mx-auto">
+      
+      <!-- Breadcrumb -->
+      <div class="flex items-center gap-2 text-sm text-gray-400 mb-6">
+        <a href="index.html" class="hover:text-white transition">Home</a>
+        <span>→</span>
+        <span id="breadcrumbProduct" class="text-orange-400">Product</span>
+      </div>
+
+      <!-- Product Details -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+        
+        <!-- Image Section -->
+        <div class="glass rounded-3xl p-8 flex items-center justify-center min-h-[400px]">
+          <img id="productImage" src="" alt="Product" 
+               class="max-w-full max-h-[400px] object-contain rounded-2xl">
+        </div>
+
+        <!-- Info Section -->
+        <div class="space-y-6">
+          <div>
+            <div id="productBrand" class="text-violet-400 font-bold text-sm uppercase tracking-wide mb-2">Brand</div>
+            <h1 id="productName" class="text-4xl font-bold mb-2">Product Name</h1>
+            <div id="productCategories" class="flex flex-wrap gap-2 mb-4"></div>
+          </div>
+
+          <!-- Price -->
+          <div class="flex items-baseline gap-4">
+            <span id="productPrice" class="text-5xl font-bold text-orange-400">₹0</span>
+            <span id="productOriginalPrice" class="text-2xl text-gray-500 line-through hidden">₹0</span>
+            <span id="productDiscount" class="text-lg bg-orange-500/20 text-orange-400 font-bold px-3 py-1 rounded hidden">0% OFF</span>
+          </div>
+
+          <!-- Description -->
+          <div id="productDescription" class="text-gray-300 leading-relaxed">
+            No description available.
+          </div>
+
+          <!-- Stock Status -->
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 bg-green-500 rounded-full"></span>
+            <span class="text-green-400 font-medium">In Stock</span>
+          </div>
+
+          <!-- Add to Cart -->
+          <div class="flex gap-4 pt-4">
+            <div class="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-2">
+              <button onclick="updateQty(-1)" class="text-xl hover:text-orange-400 transition">−</button>
+              <span id="qty" class="text-xl font-bold w-8 text-center">1</span>
+              <button onclick="updateQty(1)" class="text-xl hover:text-orange-400 transition">+</button>
+            </div>
+            <button onclick="addToCart()" 
+                    class="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-4 px-8 rounded-xl transition transform hover:scale-105">
+              🛒 Add to Cart
+            </button>
+          </div>
+
+          <!-- Features -->
+          <div class="grid grid-cols-3 gap-4 pt-6 border-t border-white/10">
+            <div class="text-center">
+              <div class="text-2xl mb-1">🚚</div>
+              <div class="text-xs text-gray-400">Free Delivery</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl mb-1">↩️</div>
+              <div class="text-xs text-gray-400">Easy Returns</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl mb-1">🔒</div>
+              <div class="text-xs text-gray-400">Secure Payment</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Related Products -->
+      <div class="mt-16">
+        <h2 class="text-2xl font-bold mb-6">Related Products</h2>
+        <div id="relatedProducts" class="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <!-- Related products will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- AUTH MODAL -->
+  <div id="authModal" class="fixed inset-0 z-[200] hidden flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="glass rounded-2xl p-6 w-full max-w-sm mx-4 relative max-h-[90vh] overflow-y-auto">
+      <!-- Tabs -->
+      <div class="flex mb-6 gap-3 pr-8">
+        <button id="tabLogin" onclick="switchTab('login')" class="flex-1 h-10 rounded-lg font-semibold text-sm flex items-center justify-center transition btn-primary">LOGIN</button>
+        <button id="tabRegister" onclick="switchTab('register')" class="flex-1 h-10 rounded-lg font-semibold text-sm flex items-center justify-center transition glass hover:bg-white/10">REGISTER</button>
+      </div>
+      <button onclick="closeAuth()" class="absolute top-3 right-4 text-gray-400 hover:text-white text-lg leading-none">✕</button>
+      <div class="space-y-4">
+        <input id="authUsername" type="text" placeholder="Username" class="w-full glass rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 hidden bg-white/10 text-[var(--text-primary)] placeholder-[var(--text-muted)]">
+        <input id="authEmail" type="email" placeholder="Email address" class="w-full glass rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white/10 text-[var(--text-primary)] placeholder-[var(--text-muted)]">
+        <input id="authPassword" type="password" placeholder="Password" class="w-full glass rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white/10 text-[var(--text-primary)] placeholder-[var(--text-muted)]">
+        <p id="authMsg" class="text-xs text-center hidden"></p>
+        <button onclick="submitAuth()" class="w-full btn-primary py-3 rounded-xl font-bold text-sm" id="authSubmitBtn">Login</button>
+      </div>
+      <p class="text-center text-xs text-gray-500 mt-4">
+        <span id="switchHint">Don't have an account?</span>
+        <span class="text-violet-400 cursor-pointer ml-1" id="switchLink" onclick="switchTab('register')">Register</span>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const BASE = window.location.origin.includes('localhost') ? 'http://localhost:5000' : '';
+    let currentProduct = null;
+    let quantity = 1;
+
+    function getProductIdFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('id');
+    }
+
+    function updateQty(change) {
+      quantity = Math.max(1, quantity + change);
+      document.getElementById('qty').textContent = quantity;
+    }
+
+    function addToCart() {
+      if (!currentProduct) return;
+      
+      let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+      const existing = cart.find(item => item._id === currentProduct._id);
+      
+      if (existing) {
+        existing.qty += quantity;
+      } else {
+        cart.push({
+          _id: currentProduct._id,
+          name: currentProduct.name,
+          price: currentProduct.price,
+          image: currentProduct.image,
+          brand: currentProduct.brand,
+          qty: quantity
+        });
+      }
+      
+      localStorage.setItem('cart', JSON.stringify(cart));
+      alert(`Added ${quantity} ${currentProduct.name} to cart!`);
+    }
+
+    async function loadProduct() {
+      const productId = getProductIdFromUrl();
+      console.log('Product ID from URL:', productId);
+      if (!productId) {
+        document.querySelector('main').innerHTML = '<div class="text-center py-20 text-red-400">Product ID not found</div>';
+        return;
+      }
+
+      try {
+        const url = `${BASE}/api/products/${productId}`;
+        console.log('Fetching from:', url);
+        const [productRes, allProductsRes] = await Promise.all([
+          fetch(url),
+          fetch(`${BASE}/api/products`)
+        ]);
+
+        console.log('Response status:', productRes.status);
+        if (!productRes.ok) {
+          const errorText = await productRes.text();
+          console.error('Error response:', errorText);
+          document.querySelector('main').innerHTML = '<div class="text-center py-20 text-red-400">Product not found (Status: ' + productRes.status + ')</div>';
+          return;
+        }
+
+        currentProduct = await productRes.json();
+        console.log('Product loaded:', currentProduct);
+        const allProducts = await allProductsRes.json();
+
+        // Update page content
+        const imgEl = document.getElementById('productImage');
+        if (imgEl) {
+          imgEl.onerror = function() {
+            this.style.display = 'none';
+            this.parentElement.innerHTML = '<div class="text-9xl">🛍️</div>';
+          };
+          imgEl.src = currentProduct.image || '';
+        } else {
+          console.error('productImage element not found');
+        }
+        
+        const brandEl = document.getElementById('productBrand');
+        if (brandEl) brandEl.textContent = currentProduct.brand || 'Brand';
+        else console.error('productBrand element not found');
+        
+        const nameEl = document.getElementById('productName');
+        if (nameEl) nameEl.textContent = currentProduct.name || 'Product Name';
+        else console.error('productName element not found');
+        
+        const breadcrumbEl = document.getElementById('breadcrumbProduct');
+        if (breadcrumbEl) breadcrumbEl.textContent = currentProduct.name || 'Product';
+        else console.error('breadcrumbProduct element not found');
+        
+        const priceEl = document.getElementById('productPrice');
+        if (priceEl) priceEl.textContent = `₹${Number(currentProduct.price || 0).toLocaleString()}`;
+        else console.error('productPrice element not found');
+
+        // Categories
+        if (currentProduct.categories?.length) {
+          const catHtml = currentProduct.categories.map(c => 
+            `<span class="text-xs px-3 py-1 bg-violet-500/30 text-violet-300 rounded-full">${typeof c === 'object' ? c.name : c}</span>`
+          ).join('');
+          const catEl = document.getElementById('productCategories');
+          if (catEl) catEl.innerHTML = catHtml;
+        }
+
+        // Original price & discount
+        if (currentProduct.originalPrice) {
+          const origPriceEl = document.getElementById('productOriginalPrice');
+          if (origPriceEl) {
+            origPriceEl.textContent = `₹${Number(currentProduct.originalPrice).toLocaleString()}`;
+            origPriceEl.classList.remove('hidden');
+          }
+        }
+        if (currentProduct.discount) {
+          const discountEl = document.getElementById('productDiscount');
+          if (discountEl) {
+            discountEl.textContent = `${currentProduct.discount}% OFF`;
+            discountEl.classList.remove('hidden');
+          }
+        }
+
+        // Description
+        if (currentProduct.description) {
+          const descEl = document.getElementById('productDescription');
+          if (descEl) descEl.textContent = currentProduct.description;
+        }
+
+        // Load related products (same brand or category)
+        const related = allProducts
+          .filter(p => p._id !== currentProduct._id)
+          .filter(p => 
+            p.brand === currentProduct.brand || 
+            p.categories?.some(c => currentProduct.categories?.some(cc => 
+              (typeof c === 'object' ? c.name : c) === (typeof cc === 'object' ? cc.name : cc)
+            ))
+          )
+          .slice(0, 4);
+
+        renderRelatedProducts(related);
+
+      } catch (err) {
+        console.error('Error loading product:', err);
+        document.querySelector('main').innerHTML = '<div class="text-center py-20 text-red-400">Error loading product</div>';
+      }
+    }
+
+    function renderRelatedProducts(products) {
+      const container = document.getElementById('relatedProducts');
+      if (!products.length) {
+        container.innerHTML = '<p class="text-gray-400 col-span-4">No related products found</p>';
+        return;
+      }
+
+      container.innerHTML = products.map(p => `
+        <a href="product.html?id=${p._id}" class="glass p-4 rounded-2xl hover:border-orange-500/50 transition block">
+          <div class="h-32 flex items-center justify-center mb-3 bg-white/5 rounded-xl overflow-hidden">
+            <img src="${p.image}" alt="${p.name}" class="max-h-full max-w-full object-contain"
+                 onerror="this.outerHTML='<span class=\'text-3xl\'>🛍️</span>'">
+          </div>
+          <div class="text-[10px] text-violet-400 font-bold uppercase mb-1">${p.brand}</div>
+          <h3 class="font-bold text-sm mb-2 line-clamp-2">${p.name}</h3>
+          <div class="flex items-center justify-between">
+            <span class="text-orange-400 font-bold">₹${Number(p.price).toLocaleString()}</span>
+            ${p.discount ? `<span class="text-[10px] bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded">${p.discount}% OFF</span>` : ''}
+          </div>
+        </a>
+      `).join('');
+    }
+
+    // Header functions
+    function goSearch() {
+      const q = document.getElementById('navSearch')?.value.trim();
+      if (q) window.location.href = `index.html?q=${encodeURIComponent(q)}&mode=search`;
+    }
+    
+    function goToCart() {
+      window.location.href = 'cart.html';
+    }
+    
+    function toggleTheme() {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme');
+      html.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+    }
+    
+    // Auth functions
+    let authMode = 'login';
+    function openAuth(mode = 'login') {
+      authMode = mode;
+      const modal = document.getElementById('authModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+    function closeAuth() {
+      const modal = document.getElementById('authModal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+    function switchTab(mode) {
+      authMode = mode;
+      document.getElementById('tabLogin').className = mode === 'login' ? 'flex-1 h-10 rounded-lg font-semibold text-sm flex items-center justify-center transition btn-primary' : 'flex-1 h-10 rounded-lg font-semibold text-sm flex items-center justify-center transition glass hover:bg-white/10';
+      document.getElementById('tabRegister').className = mode === 'register' ? 'flex-1 h-10 rounded-lg font-semibold text-sm flex items-center justify-center transition btn-primary' : 'flex-1 h-10 rounded-lg font-semibold text-sm flex items-center justify-center transition glass hover:bg-white/10';
+      document.getElementById('authUsername').classList.toggle('hidden', mode === 'login');
+      document.getElementById('authSubmitBtn').textContent = mode === 'login' ? 'Login' : 'Register';
+    }
+    async function submitAuth() {
+      const email = document.getElementById('authEmail').value;
+      const password = document.getElementById('authPassword').value;
+      const username = document.getElementById('authUsername').value;
+      const endpoint = authMode === 'login' ? '/api/login' : '/api/register';
+      try {
+        const res = await fetch(`${BASE}${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, username })
+        });
+        const data = await res.json();
+        if (data.success) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+          closeAuth();
+          updateAccountUI(data.user);
+        } else {
+          document.getElementById('authMsg').textContent = data.error || 'Failed';
+          document.getElementById('authMsg').classList.remove('hidden');
+        }
+      } catch (err) {
+        console.error('Auth error:', err);
+      }
+    }
+    function updateAccountUI(user) {
+      if (user) {
+        document.getElementById('openAuthBtn').classList.add('hidden');
+        document.getElementById('userMenu').classList.remove('hidden');
+        document.getElementById('userEmailBtn').textContent = `Hi ${user.username || user.email}`;
+        document.getElementById('loggedEmail').textContent = user.email;
+      } else {
+        document.getElementById('openAuthBtn').classList.remove('hidden');
+        document.getElementById('userMenu').classList.add('hidden');
+      }
+    }
+    function logout() {
+      localStorage.removeItem('user');
+      updateAccountUI(null);
+    }
+    function renderCart() {
+      const cart = JSON.parse(localStorage.getItem('cart')) || [];
+      const countEl = document.getElementById('cartCount');
+      const itemsEl = document.getElementById('cartItems');
+      const totalEl = document.getElementById('cartTotal');
+      const totalPEl = document.getElementById('totalPrice');
+      const totalQty = cart.reduce((s, i) => s + (i.qty || i.quantity || 1), 0);
+      if (countEl) countEl.textContent = totalQty;
+      if (cart.length === 0) {
+        if (itemsEl) itemsEl.innerHTML = '<p class="text-xs text-gray-400">Cart is empty</p>';
+        if (totalEl) totalEl.classList.add('hidden');
+        return;
+      }
+      if (itemsEl) itemsEl.innerHTML = cart.map(i => `
+        <div class="flex justify-between text-xs py-1">
+          <span>${i.name} × ${i.qty || i.quantity || 1}</span>
+          <span class="text-orange-400">₹${(i.price * (i.qty || i.quantity || 1)).toLocaleString()}</span>
+        </div>`).join('');
+      const total = cart.reduce((s, i) => s + i.price * (i.qty || i.quantity || 1), 0);
+      if (totalPEl) totalPEl.textContent = '₹' + total.toLocaleString();
+      if (totalEl) totalEl.classList.remove('hidden');
+    }
+
+    // Load product on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      loadProduct();
+      renderCart();
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (user) updateAccountUI(user);
+    });
+  </script>
+</body>
+</html>
