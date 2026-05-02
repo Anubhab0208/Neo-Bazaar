@@ -1624,13 +1624,9 @@ async function loadAdminFeatured() {
     });
 
     document.querySelectorAll('.edit-featured-btn').forEach(btn => {
-<<<<<<< HEAD
       btn.onclick = async () => {
         await openFeaturedProductEditModal(btn.dataset.id);
       };
-=======
-      btn.onclick = () => openFeaturedEditModal(btn.dataset.id);
->>>>>>> 8941fc787d1b766a8ea1a54be58536df02e99890
     });
   } catch {
     container.innerHTML = '<p class="text-red-400 col-span-full text-center py-8">Failed loading featured products</p>';
