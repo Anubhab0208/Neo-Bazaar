@@ -339,13 +339,38 @@ app.post("/api/products", adminAuth, async(req,res)=>{
   }
 });
 
+// ADMIN UPDATE PRODUCT
+app.put("/api/products/:id", adminAuth, async (req, res) => {
+  try {
+    const { name, brand, price, image, originalPrice, discount } = req.body;
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (brand !== undefined) updateData.brand = brand;
+    if (price !== undefined) updateData.price = price;
+    if (image !== undefined) updateData.image = image;
+    if (originalPrice !== undefined) updateData.originalPrice = originalPrice;
+    if (discount !== undefined) updateData.discount = discount;
+    
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
+    
+    if (!product) return res.status(404).json({ error: "Product not found" });
+    res.json({ success: true, product });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ADMIN DELETE PRODUCT
 app.delete("/api/products/:id", adminAuth, async(req,res)=>{
   try{
     await Product.findByIdAndDelete(req.params.id);
     res.json({success:true});
-  }catch{
-    res.status(500).json({success:false});
+  }catch(err){
+    res.status(500).json({error:err.message});
   }
 });
 
@@ -423,13 +448,38 @@ app.post("/api/featured-products", adminAuth, async (req, res) => {
   }
 });
 
+// ADMIN UPDATE FEATURED PRODUCT
+app.put("/api/featured-products/:id", adminAuth, async (req, res) => {
+  try {
+    const { name, brand, price, image, originalPrice, discount } = req.body;
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (brand !== undefined) updateData.brand = brand;
+    if (price !== undefined) updateData.price = price;
+    if (image !== undefined) updateData.image = image;
+    if (originalPrice !== undefined) updateData.originalPrice = originalPrice;
+    if (discount !== undefined) updateData.discount = discount;
+    
+    const product = await FeaturedProduct.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
+    
+    if (!product) return res.status(404).json({ error: "Featured product not found" });
+    res.json({ success: true, product });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ADMIN DELETE FEATURED PRODUCT
 app.delete("/api/featured-products/:id", adminAuth, async (req, res) => {
   try {
     await FeaturedProduct.findByIdAndDelete(req.params.id);
     res.json({ success: true });
-  } catch {
-    res.status(500).json({ success: false });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -495,11 +545,80 @@ app.post("/api/categories/:id/subcategories", adminAuth, async (req, res) => {
   }
 });
 
+// UPDATE CATEGORY NAME (Admin only)
+app.put("/api/categories/:id", adminAuth, async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name) {
+      return res.status(400).json({ error: "Category name is required" });
+    }
+    
+    const category = await Category.findByIdAndUpdate(
+      req.params.id,
+      { name },
+      { new: true }
+    );
+    
+    if (!category) {
+      return res.status(404).json({ error: "Category not found" });
+    }
+    
+    res.json({ success: true, category });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // DELETE CATEGORY (Admin only)
 app.delete("/api/categories/:id", adminAuth, async (req, res) => {
   try {
-    await Category.findByIdAndDelete(req.params.id);
+    const catId = req.params.id;
+    
+    // First remove category reference from all products
+    await Product.updateMany(
+      { categories: catId },
+      { $pull: { categories: catId } }
+    );
+    
+    // Then delete the category
+    await Category.findByIdAndDelete(catId);
     res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting category:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// UPDATE SUBCATEGORY NAME (Admin only)
+app.put("/api/categories/:id/subcategories/:subcategory", adminAuth, async (req, res) => {
+  try {
+    const { subcategory: newSubName } = req.body;
+    const oldSubName = decodeURIComponent(req.params.subcategory);
+    
+    if (!newSubName) {
+      return res.status(400).json({ error: "New subcategory name is required" });
+    }
+    
+    const category = await Category.findById(req.params.id);
+    if (!category) {
+      return res.status(404).json({ error: "Category not found" });
+    }
+    
+    // Find and replace the subcategory
+    const idx = category.subcategories.indexOf(oldSubName);
+    if (idx === -1) {
+      return res.status(404).json({ error: "Subcategory not found" });
+    }
+    
+    // Check for duplicate
+    if (category.subcategories.includes(newSubName)) {
+      return res.status(400).json({ error: "Subcategory already exists" });
+    }
+    
+    category.subcategories[idx] = newSubName;
+    await category.save();
+    
+    res.json({ success: true, category });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -589,15 +708,82 @@ const orderSchema = new mongoose.Schema({
   paymentMethod: String,
   location: String,
   contactNumber: String,
+  promoCode: String,
   status: { type: String, default: "Placed" }
 }, { timestamps: true, strict: false }); // strict: false allows extra fields
+
+// Track promo code usage per user email
+const userPromoUsageSchema = new mongoose.Schema({
+  email: { type: String, required: true, index: true },
+  promoCode: { type: String, required: true },
+  orderId: { type: String, required: true },
+  usedAt: { type: Date, default: Date.now }
+}, { timestamps: true });
+
+const UserPromoUsage = mongoose.model("UserPromoUsage", userPromoUsageSchema);
 
 const Order = mongoose.model("Order", orderSchema);
 
 app.post("/api/orders", async (req, res) => {
-  console.log("📦 Order Received:", req.body); // Check your terminal for this!
+  console.log("📦 Order Received:", req.body);
   try {
+    const { promoCode, user } = req.body;
+    
+    // Validate promo code if provided
+    if (promoCode) {
+      const promo = await PromoCode.findOne({ code: promoCode.toUpperCase(), active: true });
+      
+      if (!promo) {
+        return res.status(400).json({ success: false, error: "Invalid or expired promo code" });
+      }
+      
+      // Check global usage limit
+      if (promo.usageLimit > 0 && promo.usedCount >= promo.usageLimit) {
+        return res.status(400).json({ success: false, error: "Promo code usage limit reached" });
+      }
+      
+      // Check one-time per account
+      if (promo.oneTimePerAccount && user?.email) {
+        const existingUsage = await UserPromoUsage.findOne({ 
+          email: user.email, 
+          promoCode: promoCode.toUpperCase() 
+        });
+        if (existingUsage) {
+          return res.status(400).json({ success: false, error: "You have already used this promo code" });
+        }
+      }
+      
+      // Check minimum order amount
+      const subtotal = req.body.subtotal || 0;
+      if (promo.minAmount > 0 && subtotal < promo.minAmount) {
+        return res.status(400).json({ 
+          success: false, 
+          error: `Minimum order amount ₹${promo.minAmount} required for this code` 
+        });
+      }
+    }
+    
     const order = await Order.create(req.body);
+    
+    // Track promo code usage
+    if (promoCode && order) {
+      const promo = await PromoCode.findOne({ code: promoCode.toUpperCase() });
+      if (promo) {
+        // Increment used count
+        promo.usedCount += 1;
+        await promo.save();
+        
+        // Track per-user usage
+        if (user?.email) {
+          await UserPromoUsage.create({
+            email: user.email,
+            promoCode: promoCode.toUpperCase(),
+            orderId: order._id.toString()
+          });
+        }
+      }
+    }
+    
     console.log("✅ Order Saved ID:", order._id);
     res.json({ success: true, orderId: order._id });
   } catch (err) {
@@ -658,6 +844,103 @@ app.get("/api/orders/user/:email", async (req, res) => {
     const email = decodeURIComponent(req.params.email);
     const orders = await Order.find({ "user.email": email }).sort({ createdAt: -1 });
     res.json(orders);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* =========================
+   PROMO CODES / DISCOUNTS
+========================= */
+const promoCodeSchema = new mongoose.Schema({
+  code: { type: String, required: true, unique: true, uppercase: true },
+  discountType: { type: String, enum: ['percent', 'fixed'], default: 'percent' },
+  value: { type: Number, required: true, min: 1 },
+  minAmount: { type: Number, default: 0 },
+  usageLimit: { type: Number, default: 0 }, // 0 = unlimited
+  usedCount: { type: Number, default: 0 },
+  oneTimePerAccount: { type: Boolean, default: false },
+  desc: { type: String, default: '' },
+  active: { type: Boolean, default: true }
+}, { timestamps: true });
+
+const PromoCode = mongoose.model("PromoCode", promoCodeSchema);
+
+// GET ALL PROMO CODES (Public - for checkout page)
+app.get("/api/promo-codes", async (req, res) => {
+  try {
+    const codes = await PromoCode.find({ active: true }).sort({ createdAt: -1 });
+    res.json(codes);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET ALL PROMO CODES (Admin - includes inactive)
+app.get("/api/admin/promo-codes", adminAuth, async (req, res) => {
+  try {
+    const codes = await PromoCode.find().sort({ createdAt: -1 });
+    res.json(codes);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// CREATE PROMO CODE (Admin only)
+app.post("/api/promo-codes", adminAuth, async (req, res) => {
+  try {
+    const { code, discountType, value, minAmount, desc } = req.body;
+    if (!code || !value) {
+      return res.status(400).json({ error: "Code and value are required" });
+    }
+
+    const promoCode = await PromoCode.create({
+      code: code.toUpperCase(),
+      discountType: discountType || 'percent',
+      value,
+      minAmount: minAmount || 0,
+      desc: desc || ''
+    });
+
+    res.json({ success: true, promoCode });
+  } catch (err) {
+    if (err.code === 11000) {
+      res.status(400).json({ error: "Promo code already exists" });
+    } else {
+      res.status(500).json({ error: err.message });
+    }
+  }
+});
+
+// UPDATE PROMO CODE (Admin only)
+app.put("/api/promo-codes/:id", adminAuth, async (req, res) => {
+  try {
+    const { discountType, value, minAmount, desc, active } = req.body;
+    const updateData = {};
+    if (discountType !== undefined) updateData.discountType = discountType;
+    if (value !== undefined) updateData.value = value;
+    if (minAmount !== undefined) updateData.minAmount = minAmount;
+    if (desc !== undefined) updateData.desc = desc;
+    if (active !== undefined) updateData.active = active;
+
+    const promoCode = await PromoCode.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
+
+    if (!promoCode) return res.status(404).json({ error: "Promo code not found" });
+    res.json({ success: true, promoCode });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE PROMO CODE (Admin only)
+app.delete("/api/promo-codes/:id", adminAuth, async (req, res) => {
+  try {
+    await PromoCode.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

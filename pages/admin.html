@@ -335,12 +335,31 @@
               <input id="promoCode" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-pink-500 uppercase" placeholder="e.g., SAVE20">
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-300 mb-1">Discount Percentage</label>
-              <input id="promoPercent" type="number" min="1" max="100" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-pink-500" placeholder="e.g., 20">
+              <label class="block text-sm font-medium text-gray-300 mb-1">Discount Type</label>
+              <select id="promoType" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-pink-500">
+                <option value="percent">Percentage (% off)</option>
+                <option value="fixed">Fixed Amount (₹ off)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Discount Value</label>
+              <input id="promoValue" type="number" min="1" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-pink-500" placeholder="e.g., 20 for 20% or 100 for ₹100">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Min Order Amount (₹)</label>
+              <input id="promoMinAmount" type="number" min="0" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-pink-500" placeholder="e.g., 1000 (0 = no minimum)">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Usage Limit (0 = unlimited)</label>
+              <input id="promoUsageLimit" type="number" min="0" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-pink-500" placeholder="e.g., 100 (0 = unlimited)">
+            </div>
+            <div class="flex items-center gap-2">
+              <input id="promoOneTime" type="checkbox" class="w-5 h-5 bg-gray-700 border border-gray-600 rounded text-pink-500 focus:outline-none focus:border-pink-500">
+              <label for="promoOneTime" class="text-sm text-gray-300">One time use per account only</label>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-300 mb-1">Description (optional)</label>
-              <input id="promoDesc" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-pink-500" placeholder="e.g., 20% off your order">
+              <input id="promoDesc" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-pink-500" placeholder="e.g., 20% off orders above ₹1000">
             </div>
             <button onclick="addPromoCode()" class="w-full bg-gradient-to-r from-pink-500 to-violet-500 hover:from-pink-600 hover:to-violet-600 text-white font-bold py-3 rounded-lg transition">
               Add Promo Code
@@ -451,11 +470,14 @@ async function loadAdminProducts() {
         ${p.categories?.length ? `<div class="flex flex-wrap gap-1 mt-1">${p.categories.map(c => { const cat = typeof c === 'object' ? c : {name: c}; const selectedSubs = p.selectedSubcategories || []; const catSubs = selectedSubs.filter(s => s.startsWith(cat.name + ':')); return `<span class="text-[10px] px-2 py-0.5 bg-violet-500/30 text-violet-300 rounded">${cat.name}${catSubs.length ? ': ' + catSubs.map(s => s.split(':')[1]).join(', ') : ''}</span>`; }).join('')}</div>` : '<p class="text-xs text-gray-500 mt-1">No categories</p>'}
         <p class="text-green-400 font-bold mt-2">₹${Number(p.price).toLocaleString()}</p>
         <div class="flex gap-2 mt-3">
-          <button class="edit-cat-btn flex-1 bg-violet-600 hover:bg-violet-700 text-white px-3 py-2 rounded text-sm transition" data-id="${p._id}">
-            ✏️ Edit
+          <button class="edit-product-btn flex-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-2 rounded text-xs transition" data-id="${p._id}">
+            ✏️ Edit Product
           </button>
-          <button class="delete-btn flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition" data-id="${p._id}">
-            Delete
+          <button class="edit-cat-btn flex-1 bg-violet-600 hover:bg-violet-700 text-white px-2 py-2 rounded text-xs transition" data-id="${p._id}">
+            🏷️ Categories
+          </button>
+          <button class="delete-btn flex-1 bg-red-600 hover:bg-red-700 text-white px-2 py-2 rounded text-xs transition" data-id="${p._id}">
+            🗑️ Delete
           </button>
         </div>
       </div>
@@ -476,6 +498,12 @@ async function loadAdminProducts() {
     document.querySelectorAll('.edit-cat-btn').forEach(btn => {
       btn.onclick = async () => {
         await openCategoryEditModal(btn.dataset.id);
+      };
+    });
+
+    document.querySelectorAll('.edit-product-btn').forEach(btn => {
+      btn.onclick = async () => {
+        await openProductEditModal(btn.dataset.id);
       };
     });
   } catch {
@@ -725,9 +753,291 @@ function updateCategoriesInput() {
 
 // Open category manager modal
 function openCategoryManager() {
-  // Simple alert for now - can be expanded to a full modal
-  const catNames = allCategories.map(c => c.name).join(', ') || 'No categories yet';
-  alert(`Existing Categories:\n${catNames}\n\nType a category name in the search box to create a new one.`);
+  renderCategoryManager();
+  document.getElementById('categoryManagerModal').classList.remove('hidden');
+  document.getElementById('categoryManagerModal').classList.add('flex');
+}
+
+function closeCategoryManager() {
+  document.getElementById('categoryManagerModal').classList.add('hidden');
+  document.getElementById('categoryManagerModal').classList.remove('flex');
+}
+
+function renderCategoryManager() {
+  const container = document.getElementById('categoryManagerList');
+  if (!allCategories.length) {
+    container.innerHTML = '<p class="text-gray-400 text-center py-4">No categories yet</p>';
+    return;
+  }
+
+  container.innerHTML = allCategories.map((cat, idx) => `
+    <div class="bg-gray-700 rounded-lg p-4 mb-3">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2 flex-1">
+          <span class="text-violet-400 font-bold text-lg">📁</span>
+          <span id="cat-name-${idx}" class="font-semibold text-white">${cat.name}</span>
+          <input id="cat-edit-${idx}" type="text" value="${cat.name}" class="hidden bg-gray-600 border border-gray-500 rounded px-2 py-1 text-white text-sm flex-1">
+        </div>
+        <div class="flex gap-2">
+          <button onclick="toggleEditCategory(${idx})" id="cat-edit-btn-${idx}" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs">Edit</button>
+          <button onclick="saveEditCategory(${idx})" id="cat-save-btn-${idx}" class="hidden bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs">Save</button>
+          <button onclick="deleteCategory(${idx})" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs">Delete</button>
+        </div>
+      </div>
+      
+      <!-- Subcategories -->
+      <div class="ml-8 space-y-2">
+        ${cat.subcategories?.map((sub, subIdx) => `
+          <div class="flex items-center justify-between bg-gray-600 rounded px-3 py-2">
+            <div class="flex items-center gap-2 flex-1">
+              <span class="text-gray-400">🏷️</span>
+              <span id="sub-name-${idx}-${subIdx}" class="text-sm text-gray-200">${sub}</span>
+              <input id="sub-edit-${idx}-${subIdx}" type="text" value="${sub}" class="hidden bg-gray-500 border border-gray-400 rounded px-2 py-1 text-white text-sm flex-1">
+            </div>
+            <div class="flex gap-2">
+              <button onclick="toggleEditSubcategory(${idx}, ${subIdx})" id="sub-edit-btn-${idx}-${subIdx}" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs">Edit</button>
+              <button onclick="saveEditSubcategory(${idx}, ${subIdx})" id="sub-save-btn-${idx}-${subIdx}" class="hidden bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs">Save</button>
+              <button onclick="deleteSubcategory(${idx}, ${subIdx})" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs">Delete</button>
+            </div>
+          </div>
+        `).join('') || '<p class="text-gray-500 text-sm italic">No subcategories</p>'}
+        
+        <!-- Add subcategory -->
+        <div class="flex gap-2 mt-2">
+          <input id="new-sub-${idx}" type="text" placeholder="New subcategory..." class="flex-1 bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white text-sm">
+          <button onclick="addSubcategory(${idx})" class="bg-violet-600 hover:bg-violet-700 text-white px-3 py-2 rounded text-sm">Add</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleEditCategory(idx) {
+  document.getElementById(`cat-name-${idx}`).classList.add('hidden');
+  document.getElementById(`cat-edit-${idx}`).classList.remove('hidden');
+  document.getElementById(`cat-edit-btn-${idx}`).classList.add('hidden');
+  document.getElementById(`cat-save-btn-${idx}`).classList.remove('hidden');
+}
+
+async function saveEditCategory(idx) {
+  const newName = document.getElementById(`cat-edit-${idx}`).value.trim();
+  if (!newName) {
+    alert('Category name cannot be empty');
+    return;
+  }
+  
+  // Check for duplicate
+  if (allCategories.some((c, i) => i !== idx && c.name.toLowerCase() === newName.toLowerCase())) {
+    alert('Category name already exists');
+    return;
+  }
+  
+  const catId = allCategories[idx]._id;
+  console.log('Updating category:', catId, 'to name:', newName);
+  try {
+    const res = await fetch(`${API_BASE}/categories/${catId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ name: newName })
+    });
+    
+    if (res.ok) {
+      allCategories[idx].name = newName;
+      saveCategories();
+      renderCategoryManager();
+      await loadCategories();
+      alert('Category updated successfully');
+    } else {
+      const errorData = await res.json().catch(() => ({}));
+      console.error('Update failed:', errorData);
+      alert('Failed to update category: ' + (errorData.error || res.statusText));
+    }
+  } catch (err) {
+    console.error('Error updating category:', err);
+    alert('Error updating category: ' + err.message);
+  }
+}
+
+async function deleteCategory(idx) {
+  if (!confirm(`Delete category "${allCategories[idx].name}"? This will also delete all its subcategories.`)) return;
+  
+  const catId = allCategories[idx]._id;
+  console.log('Deleting category:', catId);
+  try {
+    const res = await fetch(`${API_BASE}/categories/${catId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    
+    console.log('Delete response:', res.status, res.statusText);
+    
+    if (res.ok) {
+      allCategories.splice(idx, 1);
+      saveCategories();
+      renderCategoryManager();
+      await loadCategories();
+      alert('Category deleted successfully');
+    } else {
+      const errorData = await res.json().catch(() => ({}));
+      console.error('Delete failed:', errorData);
+      alert('Failed to delete category: ' + (errorData.error || res.statusText));
+    }
+  } catch (err) {
+    console.error('Error deleting category:', err);
+    alert('Error deleting category: ' + err.message);
+  }
+}
+
+function toggleEditSubcategory(catIdx, subIdx) {
+  document.getElementById(`sub-name-${catIdx}-${subIdx}`).classList.add('hidden');
+  document.getElementById(`sub-edit-${catIdx}-${subIdx}`).classList.remove('hidden');
+  document.getElementById(`sub-edit-btn-${catIdx}-${subIdx}`).classList.add('hidden');
+  document.getElementById(`sub-save-btn-${catIdx}-${subIdx}`).classList.remove('hidden');
+}
+
+async function saveEditSubcategory(catIdx, subIdx) {
+  const newName = document.getElementById(`sub-edit-${catIdx}-${subIdx}`).value.trim();
+  if (!newName) {
+    alert('Subcategory name cannot be empty');
+    return;
+  }
+  
+  // Check for duplicate in same category
+  const subs = allCategories[catIdx].subcategories || [];
+  if (subs.some((s, i) => i !== subIdx && s.toLowerCase() === newName.toLowerCase())) {
+    alert('Subcategory name already exists in this category');
+    return;
+  }
+  
+  const catId = allCategories[catIdx]._id;
+  const oldSubName = allCategories[catIdx].subcategories[subIdx];
+  
+  try {
+    // Update subcategory via API (delete old, add new)
+    const res = await fetch(`${API_BASE}/categories/${catId}/subcategories/${encodeURIComponent(oldSubName)}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ subcategory: newName })
+    });
+    
+    if (res.ok) {
+      allCategories[catIdx].subcategories[subIdx] = newName;
+      saveCategories();
+      renderCategoryManager();
+      await loadCategories();
+    } else {
+      alert('Failed to update subcategory');
+    }
+  } catch (err) {
+    console.error('Error updating subcategory:', err);
+    alert('Error updating subcategory');
+  }
+}
+
+async function deleteSubcategory(catIdx, subIdx) {
+  const subName = allCategories[catIdx].subcategories[subIdx];
+  if (!confirm(`Delete subcategory "${subName}"?`)) return;
+  
+  const catId = allCategories[catIdx]._id;
+  try {
+    const res = await fetch(`${API_BASE}/categories/${catId}/subcategories/${encodeURIComponent(subName)}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    
+    if (res.ok) {
+      allCategories[catIdx].subcategories.splice(subIdx, 1);
+      saveCategories();
+      renderCategoryManager();
+      await loadCategories();
+    } else {
+      alert('Failed to delete subcategory');
+    }
+  } catch (err) {
+    console.error('Error deleting subcategory:', err);
+    alert('Error deleting subcategory');
+  }
+}
+
+async function addSubcategory(catIdx) {
+  const input = document.getElementById(`new-sub-${catIdx}`);
+  const newSub = input.value.trim();
+  if (!newSub) {
+    alert('Please enter a subcategory name');
+    return;
+  }
+  
+  // Check for duplicate
+  const subs = allCategories[catIdx].subcategories || [];
+  if (subs.some(s => s.toLowerCase() === newSub.toLowerCase())) {
+    alert('Subcategory already exists');
+    return;
+  }
+  
+  const catId = allCategories[catIdx]._id;
+  try {
+    const res = await fetch(`${API_BASE}/categories/${catId}/subcategories`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ subcategory: newSub })
+    });
+    
+    if (res.ok) {
+      if (!allCategories[catIdx].subcategories) {
+        allCategories[catIdx].subcategories = [];
+      }
+      allCategories[catIdx].subcategories.push(newSub);
+      saveCategories();
+      renderCategoryManager();
+      await loadCategories();
+    } else {
+      alert('Failed to add subcategory');
+    }
+  } catch (err) {
+    console.error('Error adding subcategory:', err);
+    alert('Error adding subcategory');
+  }
+}
+
+function saveCategories() {
+  localStorage.setItem('categories', JSON.stringify(allCategories));
+}
+
+async function addNewCategory() {
+  const input = document.getElementById('newCategoryInput');
+  const name = input.value.trim();
+  if (!name) {
+    alert('Please enter a category name');
+    return;
+  }
+  
+  // Check for duplicate
+  if (allCategories.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+    alert('Category already exists');
+    return;
+  }
+  
+  try {
+    const res = await fetch(`${API_BASE}/categories`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ name, subcategories: [] })
+    });
+    
+    const data = await res.json();
+    if (data.success) {
+      allCategories.push({ _id: data.category._id, name, subcategories: [] });
+      saveCategories();
+      input.value = '';
+      renderCategoryManager();
+      await loadCategories();
+    } else {
+      alert(data.error || 'Failed to create category');
+    }
+  } catch (err) {
+    console.error('Error creating category:', err);
+    alert('Error creating category');
+  }
 }
 
 // Close dropdown when clicking outside
@@ -1249,9 +1559,14 @@ async function loadAdminFeatured() {
         <p class="font-bold text-white">${escapeHtml(p.name)}</p>
         <p class="text-sm text-gray-400">${escapeHtml(p.brand || 'N/A')}</p>
         <p class="text-violet-400 font-bold mt-2">₹${Number(p.price).toLocaleString()}</p>
-        <button class="delete-featured-btn bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded w-full mt-3 transition" data-id="${p._id}">
-           Delete
-        </button>
+        <div class="flex gap-2 mt-3">
+          <button class="edit-featured-btn flex-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-2 rounded text-xs transition" data-id="${p._id}">
+            ✏️ Edit
+          </button>
+          <button class="delete-featured-btn flex-1 bg-red-600 hover:bg-red-700 text-white px-2 py-2 rounded text-xs transition" data-id="${p._id}">
+            🗑️ Delete
+          </button>
+        </div>
       </div>
     `).join('');
 
@@ -1264,6 +1579,12 @@ async function loadAdminFeatured() {
         });
         if (res.ok) loadAdminFeatured();
         else alert('Delete failed');
+      };
+    });
+
+    document.querySelectorAll('.edit-featured-btn').forEach(btn => {
+      btn.onclick = async () => {
+        await openFeaturedProductEditModal(btn.dataset.id);
       };
     });
   } catch {
@@ -1430,6 +1751,135 @@ function featCalcFromDiscount() {
   }
 }
 
+/* =============================================
+   PRODUCT EDIT FUNCTIONS
+   ============================================= */
+// Note: currentEditProductId is already declared above for category editing
+let currentEditIsFeatured = false;
+
+function calculateEditPrice() {
+  const msrp     = parseFloat(document.getElementById('editProdOriginalPrice').value);
+  let   discount = parseFloat(document.getElementById('editProdDiscount').value);
+  if (discount < 0) { discount = 0; document.getElementById('editProdDiscount').value = 0; }
+  if (discount > 100) { discount = 100; document.getElementById('editProdDiscount').value = 100; }
+  if (!isNaN(msrp) && !isNaN(discount)) {
+    const sell = +(msrp * (1 - discount / 100)).toFixed(2);
+    document.getElementById('editProdPrice').value = sell > 0 ? sell : 0;
+  }
+}
+
+function openProductEditModal(productId) {
+  const product = window.adminProducts?.find(p => p._id === productId);
+  if (!product) {
+    alert('Product not found');
+    return;
+  }
+
+  currentEditProductId = productId;
+  currentEditIsFeatured = false;
+
+  document.getElementById('editProdName').value = product.name || '';
+  document.getElementById('editProdBrand').value = product.brand || '';
+  document.getElementById('editProdImage').value = product.image || '';
+  document.getElementById('editProdPrice').value = product.price || '';
+  document.getElementById('editProdOriginalPrice').value = product.originalPrice || '';
+  document.getElementById('editProdDiscount').value = product.discount || '';
+
+  document.getElementById('productEditModal').classList.remove('hidden');
+  document.getElementById('productEditModal').classList.add('flex');
+}
+
+async function openFeaturedProductEditModal(productId) {
+  // Fetch featured products if not already loaded
+  try {
+    const res = await fetch(`${API_BASE}/featured-products`);
+    const featured = await res.json();
+    const product = featured.find(p => p._id === productId);
+    
+    if (!product) {
+      alert('Featured product not found');
+      return;
+    }
+
+    currentEditProductId = productId;
+    currentEditIsFeatured = true;
+
+    document.getElementById('editProdName').value = product.name || '';
+    document.getElementById('editProdBrand').value = product.brand || '';
+    document.getElementById('editProdImage').value = product.image || '';
+    document.getElementById('editProdPrice').value = product.price || '';
+    document.getElementById('editProdOriginalPrice').value = product.originalPrice || '';
+    document.getElementById('editProdDiscount').value = product.discount || '';
+
+    document.getElementById('productEditModal').classList.remove('hidden');
+    document.getElementById('productEditModal').classList.add('flex');
+  } catch (err) {
+    console.error('Error fetching featured product:', err);
+    alert('Error loading featured product');
+  }
+}
+
+function closeProductEditModal() {
+  document.getElementById('productEditModal').classList.add('hidden');
+  document.getElementById('productEditModal').classList.remove('flex');
+  currentEditProductId = null;
+  currentEditIsFeatured = false;
+}
+
+async function saveProductEdit() {
+  if (!currentEditProductId) return;
+
+  const name = document.getElementById('editProdName').value.trim();
+  const brand = document.getElementById('editProdBrand').value.trim();
+  const image = document.getElementById('editProdImage').value.trim();
+  let price = parseFloat(document.getElementById('editProdPrice').value);
+  const originalPrice = parseFloat(document.getElementById('editProdOriginalPrice').value) || undefined;
+  const discount = parseFloat(document.getElementById('editProdDiscount').value) || undefined;
+
+  // Auto-calculate price if original price and discount are provided
+  if (isNaN(price) && originalPrice && discount) {
+    price = +(originalPrice * (1 - discount / 100)).toFixed(2);
+    document.getElementById('editProdPrice').value = price;
+  }
+
+  if (!name || !brand || !image || isNaN(price) || price <= 0) {
+    alert('Please fill in all required fields');
+    return;
+  }
+
+  const body = { name, brand, price, image };
+  if (originalPrice) body.originalPrice = originalPrice;
+  if (discount) body.discount = discount;
+
+  const endpoint = currentEditIsFeatured 
+    ? `${API_BASE}/featured-products/${currentEditProductId}`
+    : `${API_BASE}/products/${currentEditProductId}`;
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(body)
+    });
+
+    if (res.ok) {
+      alert('Product updated successfully!');
+      closeProductEditModal();
+      if (currentEditIsFeatured) {
+        loadAdminFeatured();
+      } else {
+        loadAdminProducts();
+      }
+    } else {
+      const data = await res.json();
+      alert(data.error || 'Failed to update product');
+    }
+  } catch (err) {
+    console.error('Error updating product:', err);
+    alert('Error updating product');
+  }
+}
+
 /* INIT */
 function initApp() {
   const token = localStorage.getItem("adminToken");
@@ -1452,115 +1902,197 @@ function initApp() {
 }
 
 /* PROMO CODES MANAGEMENT */
-// Store promo codes in localStorage for persistence
-function getPromoCodes() {
-  const stored = localStorage.getItem('promoCodes');
-  return stored ? JSON.parse(stored) : [
-    { code: 'NEODROP10', percent: 15, desc: '15% off your order' },
-    { code: 'SAVE5', percent: 5, desc: '5% off' },
-    { code: 'MEGADEAL', percent: 50, desc: '50% off mega deal' },
-    { code: 'FLASH90', percent: 90, desc: '90% off flash sale' },
-    { code: 'WELCOME20', percent: 20, desc: '20% off welcome discount' },
-    { code: 'FIRSTBUY', percent: 25, desc: '25% off first purchase' }
-  ];
-}
+let promoCodesList = [];
 
-function savePromoCodes(codes) {
-  localStorage.setItem('promoCodes', JSON.stringify(codes));
-}
-
-function loadPromoCodes() {
+async function loadPromoCodes() {
   const container = document.getElementById('promoCodesGrid');
-  const codes = getPromoCodes();
+  try {
+    const res = await fetch(`${API_BASE}/admin/promo-codes`, {
+      headers: getAuthHeaders()
+    });
+    promoCodesList = await res.json();
 
-  if (!codes.length) {
-    container.innerHTML = '<p class="text-gray-400 col-span-full text-center py-8">No promo codes yet</p>';
-    return;
+    if (!promoCodesList.length) {
+      container.innerHTML = '<p class="text-gray-400 col-span-full text-center py-8">No promo codes yet</p>';
+      return;
+    }
+
+    container.innerHTML = promoCodesList.map((p) => {
+      const discountLabel = p.discountType === 'fixed' ? `₹${p.value} off` : `${p.value}% off`;
+      const minAmountLabel = p.minAmount > 0 ? ` (Min: ₹${p.minAmount})` : '';
+      const usageLabel = p.usageLimit > 0 ? ` | Used: ${p.usedCount}/${p.usageLimit}` : '';
+      const oneTimeLabel = p.oneTimePerAccount ? ' | One-time per account' : '';
+      return `
+      <div class="bg-gray-700 border ${p.active ? 'border-gray-600' : 'border-red-600 opacity-50'} rounded-lg p-4 hover:border-pink-500 transition">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-2xl font-bold text-pink-400">${p.code}</span>
+          <span class="text-xl font-bold text-green-400">${discountLabel}</span>
+        </div>
+        <p class="text-gray-300 text-sm mb-1">${p.desc || 'No description'}</p>
+        <p class="text-xs text-blue-400 mb-2">${minAmountLabel}${usageLabel}${oneTimeLabel}</p>
+        <p class="text-xs ${p.active ? 'text-green-400' : 'text-red-400'} mb-4">${p.active ? '✓ Active' : '✗ Inactive'}</p>
+        <div class="flex gap-2">
+          <button onclick="togglePromoCode('${p._id}', ${!p.active})" class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded text-sm transition">
+            ${p.active ? 'Deactivate' : 'Activate'}
+          </button>
+          <button onclick="editPromoCode('${p._id}')" class="flex-1 bg-violet-600 hover:bg-violet-700 text-white px-3 py-2 rounded text-sm transition">
+            Edit
+          </button>
+          <button onclick="deletePromoCode('${p._id}')" class="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition">
+            Delete
+          </button>
+        </div>
+      </div>
+    `}).join('');
+  } catch (err) {
+    console.error('Failed to load promo codes:', err);
+    container.innerHTML = '<p class="text-red-400 col-span-full text-center py-8">Failed to load promo codes</p>';
   }
-
-  container.innerHTML = codes.map((p, idx) => `
-    <div class="bg-gray-700 border border-gray-600 rounded-lg p-4 hover:border-pink-500 transition">
-      <div class="flex items-center justify-between mb-2">
-        <span class="text-2xl font-bold text-pink-400">${p.code}</span>
-        <span class="text-3xl font-bold text-green-400">${p.percent}%</span>
-      </div>
-      <p class="text-gray-300 text-sm mb-4">${p.desc || 'No description'}</p>
-      <div class="flex gap-2">
-        <button onclick="editPromoCode(${idx})" class="flex-1 bg-violet-600 hover:bg-violet-700 text-white px-3 py-2 rounded text-sm transition">
-          Edit
-        </button>
-        <button onclick="deletePromoCode(${idx})" class="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm transition">
-          Delete
-        </button>
-      </div>
-    </div>
-  `).join('');
 }
 
-function addPromoCode() {
+async function addPromoCode() {
   const codeInput = document.getElementById('promoCode');
-  const percentInput = document.getElementById('promoPercent');
+  const typeInput = document.getElementById('promoType');
+  const valueInput = document.getElementById('promoValue');
+  const minAmountInput = document.getElementById('promoMinAmount');
+  const usageLimitInput = document.getElementById('promoUsageLimit');
+  const oneTimeInput = document.getElementById('promoOneTime');
   const descInput = document.getElementById('promoDesc');
 
   const code = codeInput.value.trim().toUpperCase();
-  const percent = parseInt(percentInput.value);
+  const discountType = typeInput.value;
+  const value = parseInt(valueInput.value);
+  const minAmount = parseInt(minAmountInput.value) || 0;
+  const usageLimit = parseInt(usageLimitInput.value) || 0;
+  const oneTimePerAccount = oneTimeInput.checked;
   const desc = descInput.value.trim();
 
-  if (!code || !percent || percent < 1 || percent > 100) {
-    alert('Please enter a valid code and percentage (1-100)');
+  if (!code || !value || value < 1) {
+    alert('Please enter a valid code and discount value');
     return;
   }
 
-  const codes = getPromoCodes();
-
-  // Check if code already exists
-  if (codes.some(c => c.code === code)) {
-    alert('Promo code already exists!');
+  if (discountType === 'percent' && value > 100) {
+    alert('Percentage discount cannot exceed 100%');
     return;
   }
 
-  codes.push({ code, percent, desc });
-  savePromoCodes(codes);
+  try {
+    const res = await fetch(`${API_BASE}/promo-codes`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ code, discountType, value, minAmount, usageLimit, oneTimePerAccount, desc })
+    });
 
-  // Clear inputs
-  codeInput.value = '';
-  percentInput.value = '';
-  descInput.value = '';
-
-  loadPromoCodes();
-  alert('Promo code added successfully!');
+    if (res.ok) {
+      codeInput.value = '';
+      typeInput.value = 'percent';
+      valueInput.value = '';
+      minAmountInput.value = '';
+      usageLimitInput.value = '';
+      oneTimeInput.checked = false;
+      descInput.value = '';
+      await loadPromoCodes();
+      alert('Promo code added successfully!');
+    } else {
+      const data = await res.json();
+      alert(data.error || 'Failed to add promo code');
+    }
+  } catch (err) {
+    console.error('Error adding promo code:', err);
+    alert('Error adding promo code');
+  }
 }
 
-function deletePromoCode(index) {
+async function deletePromoCode(id) {
   if (!confirm('Delete this promo code?')) return;
 
-  const codes = getPromoCodes();
-  codes.splice(index, 1);
-  savePromoCodes(codes);
-  loadPromoCodes();
+  try {
+    const res = await fetch(`${API_BASE}/promo-codes/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+
+    if (res.ok) {
+      await loadPromoCodes();
+      alert('Promo code deleted!');
+    } else {
+      alert('Failed to delete promo code');
+    }
+  } catch (err) {
+    console.error('Error deleting promo code:', err);
+    alert('Error deleting promo code');
+  }
 }
 
-function editPromoCode(index) {
-  const codes = getPromoCodes();
-  const promo = codes[index];
+async function togglePromoCode(id, active) {
+  try {
+    const res = await fetch(`${API_BASE}/promo-codes/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ active })
+    });
 
-  const newPercent = prompt(`Edit discount percentage for ${promo.code}:`, promo.percent);
-  if (newPercent === null) return;
+    if (res.ok) {
+      await loadPromoCodes();
+    } else {
+      alert('Failed to update promo code');
+    }
+  } catch (err) {
+    console.error('Error updating promo code:', err);
+    alert('Error updating promo code');
+  }
+}
 
-  const percent = parseInt(newPercent);
-  if (isNaN(percent) || percent < 1 || percent > 100) {
-    alert('Please enter a valid percentage (1-100)');
+async function editPromoCode(id) {
+  const promo = promoCodesList.find(p => p._id === id);
+  if (!promo) return;
+
+  const newType = confirm(`Current type: ${promo.discountType === 'fixed' ? 'Fixed ₹' + promo.value : promo.value + '%'}\n\nClick OK for Percentage, Cancel for Fixed Amount`);
+  const discountType = newType ? 'percent' : 'fixed';
+
+  const valuePrompt = discountType === 'percent' ? 
+    `Enter discount percentage (1-100) for ${promo.code}:` : 
+    `Enter fixed discount amount (₹) for ${promo.code}:`;
+  const newValue = prompt(valuePrompt, promo.value);
+  if (newValue === null) return;
+
+  const value = parseInt(newValue);
+  if (isNaN(value) || value < 1 || (discountType === 'percent' && value > 100)) {
+    alert('Please enter a valid discount value');
     return;
   }
+
+  const newMinAmount = prompt(`Edit minimum order amount (₹) for ${promo.code}:`, promo.minAmount || 0);
+  if (newMinAmount === null) return;
+  const minAmount = parseInt(newMinAmount) || 0;
+
+  const newUsageLimit = prompt(`Edit usage limit (0 = unlimited) for ${promo.code}:`, promo.usageLimit || 0);
+  if (newUsageLimit === null) return;
+  const usageLimit = parseInt(newUsageLimit) || 0;
+
+  const oneTimePerAccount = confirm(`Make this code one-time use per account?\n\nCurrently: ${promo.oneTimePerAccount ? 'YES' : 'NO'}\n\nClick OK for YES, Cancel for NO`);
 
   const newDesc = prompt(`Edit description for ${promo.code}:`, promo.desc || '');
   if (newDesc === null) return;
 
-  codes[index].percent = percent;
-  codes[index].desc = newDesc.trim();
-  savePromoCodes(codes);
-  loadPromoCodes();
-  alert('Promo code updated!');
+  try {
+    const res = await fetch(`${API_BASE}/promo-codes/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ discountType, value, minAmount, usageLimit, oneTimePerAccount, desc: newDesc.trim() })
+    });
+
+    if (res.ok) {
+      await loadPromoCodes();
+      alert('Promo code updated!');
+    } else {
+      alert('Failed to update promo code');
+    }
+  } catch (err) {
+    console.error('Error updating promo code:', err);
+    alert('Error updating promo code');
+  }
 }
 
 initApp();
@@ -1621,6 +2153,69 @@ initApp();
     <div class="flex gap-3">
       <button onclick="closeCategoryEditModal()" class="flex-1 py-3 rounded-lg font-bold text-sm bg-gray-700 hover:bg-gray-600 transition">Cancel</button>
       <button onclick="saveProductCategories()" class="flex-1 bg-violet-600 hover:bg-violet-700 text-white py-3 rounded-lg font-bold text-sm transition">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- CATEGORY MANAGER MODAL -->
+<div id="categoryManagerModal" class="fixed inset-0 z-[300] hidden items-center justify-center bg-black/70 backdrop-blur-sm">
+  <div class="bg-gray-800 border border-gray-600 rounded-2xl p-6 w-full max-w-2xl mx-4 relative max-h-[85vh] overflow-y-auto">
+    <button onclick="closeCategoryManager()" class="absolute top-4 right-5 text-gray-400 hover:text-white text-xl">✕</button>
+    <h2 class="text-2xl font-bold mb-4 text-violet-400">Manage Categories</h2>
+    <p class="text-gray-300 text-sm mb-4">Edit or delete categories and subcategories</p>
+    
+    <!-- Add new category -->
+    <div class="flex gap-2 mb-6">
+      <input id="newCategoryInput" type="text" placeholder="New category name..." 
+        class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-violet-500">
+      <button onclick="addNewCategory()" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg font-semibold transition">
+        Add Category
+      </button>
+    </div>
+    
+    <!-- Categories list -->
+    <div id="categoryManagerList" class="space-y-3">
+      <p class="text-gray-400 text-center py-4">Loading categories...</p>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCT EDIT MODAL -->
+<div id="productEditModal" class="fixed inset-0 z-[300] hidden items-center justify-center bg-black/70 backdrop-blur-sm">
+  <div class="bg-gray-800 border border-gray-600 rounded-2xl p-6 w-full max-w-lg mx-4 relative max-h-[90vh] overflow-y-auto">
+    <button onclick="closeProductEditModal()" class="absolute top-4 right-5 text-gray-400 hover:text-white text-xl">✕</button>
+    <h2 class="text-2xl font-bold mb-4 text-blue-400">✏️ Edit Product</h2>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-1">Product Name</label>
+        <input id="editProdName" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-1">Brand</label>
+        <input id="editProdBrand" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-1">Image URL</label>
+        <input id="editProdImage" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500">
+      </div>
+      <div class="grid grid-cols-3 gap-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Price (₹)</label>
+          <input id="editProdPrice" type="number" min="0" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Original Price</label>
+          <input id="editProdOriginalPrice" type="number" min="0" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500" oninput="calculateEditPrice()">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-1">Discount %</label>
+          <input id="editProdDiscount" type="number" min="0" max="100" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500" oninput="calculateEditPrice()">
+        </div>
+      </div>
+      <p class="text-xs text-gray-400 -mt-2">Price auto-calculates when discount is entered</p>
+      <button onclick="saveProductEdit()" class="w-full bg-gradient-to-r from-blue-500 to-violet-500 hover:from-blue-600 hover:to-violet-600 text-white font-bold py-3 rounded-lg transition">
+        Save Changes
+      </button>
     </div>
   </div>
 </div>

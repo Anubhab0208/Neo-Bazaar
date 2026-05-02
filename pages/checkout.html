@@ -340,55 +340,87 @@
     el.value = v;
   }
 
-  // Get discount codes from localStorage (set by admin)
-  function getDiscountCodes() {
-    const stored = localStorage.getItem('promoCodes');
-    if (stored) {
-      const codes = JSON.parse(stored);
-      const result = {};
-      codes.forEach(c => {
-        result[c.code] = { rate: c.percent / 100, name: `${c.percent}% off` };
-      });
-      return result;
+  // Get discount codes from API
+  let promoCodesCache = null;
+  
+  async function getPromoCodes() {
+    if (promoCodesCache) return promoCodesCache;
+    
+    try {
+      const res = await fetch('/api/promo-codes');
+      const codes = await res.json();
+      promoCodesCache = codes;
+      return codes;
+    } catch (err) {
+      console.error('Failed to load promo codes:', err);
+      return [];
     }
-    // Default codes if none in storage
-    return {
-      'NEODROP10': { rate: 0.15, name: '15% off' },
-      'SAVE5': { rate: 0.05, name: '5% off' },
-      'MEGADEAL': { rate: 0.50, name: '50% off' },
-      'FLASH90': { rate: 0.90, name: '90% off' },
-      'WELCOME20': { rate: 0.20, name: '20% off' },
-      'FIRSTBUY': { rate: 0.25, name: '25% off first purchase' }
-    };
   }
+  
+  // Load promo codes on page load
+  getPromoCodes();
 
   let appliedPromoCode = '';
+  let appliedPromoData = null;
 
-  function applyPromo() {
+  async function applyPromo() {
     const code = document.getElementById("promoInput").value.trim().toUpperCase();
-    const DISCOUNT_CODES = getDiscountCodes();
-    const discount = DISCOUNT_CODES[code];
+    const codes = await getPromoCodes();
+    const promo = codes.find(c => c.code === code);
 
-    if (!discount) {
+    if (!promo) {
       showError("Invalid promo code. Try NEODROP10, MEGADEAL, or FLASH90");
       return;
     }
 
-    discountRate = discount.rate;
+    // Check if code is active
+    if (!promo.active) {
+      showError("This promo code is no longer active");
+      return;
+    }
+
+    // Check minimum order amount
+    const subtotal = cart.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0);
+    if (promo.minAmount > 0 && subtotal < promo.minAmount) {
+      showError(`Minimum order amount ₹${promo.minAmount} required for this code`);
+      return;
+    }
+
+    // Check usage limit
+    if (promo.usageLimit > 0 && promo.usedCount >= promo.usageLimit) {
+      showError("This promo code has reached its usage limit");
+      return;
+    }
+
+    // Check one-time per account
+    const userEmail = document.getElementById("email").value;
+    if (promo.oneTimePerAccount && userEmail) {
+      // In a real app, this would check with the server
+      // For now, we'll just show a warning
+    }
+
+    // Calculate discount rate
+    if (promo.discountType === 'percent') {
+      discountRate = promo.value / 100;
+    } else {
+      // Fixed amount - convert to rate based on subtotal
+      discountRate = Math.min(promo.value / subtotal, 1);
+    }
+
     appliedPromoCode = code;
-    showError(`🎉 ${discount.name} applied!`, "success");
+    appliedPromoData = promo;
+    const discountLabel = promo.discountType === 'fixed' ? `₹${promo.value} off` : `${promo.value}% off`;
+    const limitInfo = promo.usageLimit > 0 ? ` (Limited: ${promo.usageLimit - promo.usedCount} remaining)` : '';
+    showError(`🎉 ${discountLabel} applied!${limitInfo}`, "success");
     updateTotals();
     updateDiscountLabel();
   }
 
   function updateDiscountLabel() {
     const label = document.querySelector('.summary-row:nth-child(3) span:first-child');
-    if (label && appliedPromoCode) {
-      const DISCOUNT_CODES = getDiscountCodes();
-      const discount = DISCOUNT_CODES[appliedPromoCode];
-      if (discount) {
-        label.textContent = `Discount (${discount.name})`;
-      }
+    if (label && appliedPromoData) {
+      const discountLabel = appliedPromoData.discountType === 'fixed' ? `₹${appliedPromoData.value} off` : `${appliedPromoData.value}% off`;
+      label.textContent = `Discount (${discountLabel})`;
     }
   }
 
