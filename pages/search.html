@@ -371,15 +371,16 @@
     </a>
 
     <!-- MAIN SEARCH BAR -->
-    <div class="flex-1 flex items-center gap-2 max-w-xl relative">
+    <div class="flex-1 flex items-center gap-2 max-w-xl relative" id="searchContainer">
       <span class="absolute left-4 text-sm" style="color:var(--text-muted)">🔍</span>
       <input
         id="navSearchInput"
         type="text"
         placeholder="Search Neo-Bazaar..."
         class="search-input rounded-full py-2 pl-10 pr-20 text-sm w-full"
-        onkeydown="if(event.key==='Enter') triggerSearch()"
-        oninput="document.getElementById('clearSearchBtn').style.display=this.value?'flex':'none'"
+        onkeydown="handleSearchKeydown(event)"
+        oninput="handleSearchInput(this.value)"
+        autocomplete="off"
       >
       <button id="clearSearchBtn" onclick="clearSearchInput()" title="Clear search"
         style="display:none;position:absolute;right:70px;top:50%;transform:translateY(-50%);
@@ -387,6 +388,10 @@
                width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:11px;
                align-items:center;justify-content:center;line-height:1;padding:0;">✕</button>
       <button onclick="triggerSearch()" class="btn-primary px-4 py-2 rounded-full text-sm">Search</button>
+      <!-- Autocomplete dropdown -->
+      <div id="searchSuggestions" class="hidden absolute top-full left-0 right-0 mt-2 bg-gray-800 border border-gray-600 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto">
+        <!-- Suggestions populated by JS -->
+      </div>
     </div>
 
     <div class="ml-auto flex items-center gap-3">
@@ -418,7 +423,7 @@
   </nav>
 
   <!-- Active filters summary bar (populated by JS) -->
-  <div id="activeFiltersBar" style="position:sticky;top:64px;z-index:80;background:var(--nav-bg);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:8px 40px;display:flex;align-items:center;gap:8px;overflow-x:auto;min-height:44px;flex-wrap:wrap;">
+  <div id="activeFiltersBar" style="position:sticky;top:64px;z-index:80;background:var(--nav-bg);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:8px 40px;display:none;align-items:center;gap:8px;overflow-x:auto;min-height:44px;flex-wrap:wrap;">
     <span id="activeFiltersLabel" style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:0.05em;white-space:nowrap;display:none">ACTIVE FILTERS:</span>
     <div id="activeFiltersChips" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
   </div>
@@ -835,6 +840,7 @@
         document.getElementById('productGrid').innerHTML = '';
         document.getElementById('resultsCount').innerHTML = '';
         document.getElementById('activeChips').innerHTML = '';
+        updateActiveChips(); // Hide the top active filters bar
         setPageHeader();
         return;
       }
@@ -925,6 +931,7 @@
       renderProducts(results);
       updateActiveChips();
       updateResultsCount(results.length);
+      setPageHeader();
     }
 
     /* ════════════════════════════════════════
@@ -1016,9 +1023,11 @@
       // Mirror into top active filters bar
       const topChips = document.getElementById('activeFiltersChips');
       const topLabel = document.getElementById('activeFiltersLabel');
+      const topBar = document.getElementById('activeFiltersBar');
       if (topChips) {
         topChips.innerHTML = chipsHTML;
         topLabel.style.display = chips.length ? 'block' : 'none';
+        if (topBar) topBar.style.display = chips.length ? 'flex' : 'none';
       }
 
       // Badge on mobile filter button
@@ -1031,9 +1040,142 @@
     function clearQuery() {
       currentQuery = '';
       document.getElementById('navSearchInput').value = '';
+      hideSuggestions();
       setPageHeader();
       applyFilters();
     }
+
+    /* ════════════════════════════════════════
+       AUTOCOMPLETE SEARCH
+    ════════════════════════════════════════ */
+    let suggestionIndex = -1;
+
+    function handleSearchInput(value) {
+      document.getElementById('clearSearchBtn').style.display = value ? 'flex' : 'none';
+      if (value.length < 2) {
+        hideSuggestions();
+        return;
+      }
+      const suggestions = generateSuggestions(value);
+      showSuggestions(suggestions, value);
+    }
+
+    function handleSearchKeydown(e) {
+      const suggestionsDiv = document.getElementById('searchSuggestions');
+      const items = suggestionsDiv.querySelectorAll('.suggestion-item');
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        suggestionIndex = Math.min(suggestionIndex + 1, items.length - 1);
+        updateSuggestionHighlight(items);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        suggestionIndex = Math.max(suggestionIndex - 1, -1);
+        updateSuggestionHighlight(items);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (suggestionIndex >= 0 && items[suggestionIndex]) {
+          selectSuggestion(items[suggestionIndex].textContent);
+        } else {
+          triggerSearch();
+          hideSuggestions();
+        }
+      } else if (e.key === 'Escape') {
+        hideSuggestions();
+      }
+    }
+
+    function updateSuggestionHighlight(items) {
+      items.forEach((item, idx) => {
+        if (idx === suggestionIndex) {
+          item.classList.add('bg-violet-600', 'text-white');
+          item.classList.remove('text-gray-300', 'hover:bg-gray-700');
+        } else {
+          item.classList.remove('bg-violet-600', 'text-white');
+          item.classList.add('text-gray-300', 'hover:bg-gray-700');
+        }
+      });
+    }
+
+    function generateSuggestions(query) {
+      const q = query.toLowerCase();
+      const suggestions = new Set();
+
+      // Product names
+      allProducts.forEach(p => {
+        if (p.name && p.name.toLowerCase().includes(q)) {
+          suggestions.add(p.name);
+        }
+      });
+
+      // Categories
+      allCategories.forEach(c => {
+        if (c.name && c.name.toLowerCase().includes(q)) {
+          suggestions.add(c.name);
+        }
+      });
+
+      // Subcategories
+      allCategories.forEach(c => {
+        if (c.subcategories) {
+          c.subcategories.forEach(sub => {
+            if (sub.toLowerCase().includes(q)) {
+              suggestions.add(sub);
+            }
+          });
+        }
+      });
+
+      return Array.from(suggestions).slice(0, 8); // Limit to 8 suggestions
+    }
+
+    function showSuggestions(suggestions, query) {
+      const div = document.getElementById('searchSuggestions');
+      if (suggestions.length === 0) {
+        hideSuggestions();
+        return;
+      }
+
+      suggestionIndex = -1;
+      div.innerHTML = suggestions.map((s, i) => `
+        <div class="suggestion-item px-4 py-2 cursor-pointer text-sm text-gray-300 hover:bg-gray-700 transition flex items-center gap-2"
+             onclick="selectSuggestion('${s.replace(/'/g, "\\'")}')"
+             onmouseenter="suggestionIndex = ${i}; updateSuggestionHighlight(document.querySelectorAll('.suggestion-item'))">
+          <span>🔍</span>
+          <span>${highlightMatch(s, query)}</span>
+        </div>
+      `).join('');
+
+      div.classList.remove('hidden');
+    }
+
+    function highlightMatch(text, query) {
+      const regex = new RegExp(`(${escapeRegExp(query)})`, 'gi');
+      return text.replace(regex, '<span class="text-violet-400 font-bold">$1</span>');
+    }
+
+    function escapeRegExp(string) {
+      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function selectSuggestion(value) {
+      document.getElementById('navSearchInput').value = value;
+      hideSuggestions();
+      triggerSearch();
+    }
+
+    function hideSuggestions() {
+      document.getElementById('searchSuggestions').classList.add('hidden');
+      suggestionIndex = -1;
+    }
+
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', (e) => {
+      const container = document.getElementById('searchContainer');
+      if (container && !container.contains(e.target)) {
+        hideSuggestions();
+      }
+    });
     function clearCategory() {
       currentCategory = 'all';
       currentCategoryId = null;
