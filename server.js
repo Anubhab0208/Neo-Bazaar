@@ -948,7 +948,7 @@ app.get("/api/admin/promo-codes", adminAuth, async (req, res) => {
 // CREATE PROMO CODE (Admin only)
 app.post("/api/promo-codes", adminAuth, async (req, res) => {
   try {
-    const { code, discountType, value, minAmount, desc } = req.body;
+    const { code, discountType, value, minAmount, desc, usageLimit, oneTimePerAccount } = req.body;
     if (!code || !value) {
       return res.status(400).json({ error: "Code and value are required" });
     }
@@ -958,7 +958,9 @@ app.post("/api/promo-codes", adminAuth, async (req, res) => {
       discountType: discountType || 'percent',
       value,
       minAmount: minAmount || 0,
-      desc: desc || ''
+      desc: desc || '',
+      usageLimit: usageLimit !== undefined ? usageLimit : 0,
+      oneTimePerAccount: oneTimePerAccount || false
     });
 
     res.json({ success: true, promoCode });
@@ -974,13 +976,15 @@ app.post("/api/promo-codes", adminAuth, async (req, res) => {
 // UPDATE PROMO CODE (Admin only)
 app.put("/api/promo-codes/:id", adminAuth, async (req, res) => {
   try {
-    const { discountType, value, minAmount, desc, active } = req.body;
+    const { discountType, value, minAmount, desc, active, usageLimit, oneTimePerAccount } = req.body;
     const updateData = {};
     if (discountType !== undefined) updateData.discountType = discountType;
     if (value !== undefined) updateData.value = value;
     if (minAmount !== undefined) updateData.minAmount = minAmount;
     if (desc !== undefined) updateData.desc = desc;
     if (active !== undefined) updateData.active = active;
+    if (usageLimit !== undefined) updateData.usageLimit = usageLimit;
+    if (oneTimePerAccount !== undefined) updateData.oneTimePerAccount = oneTimePerAccount;
 
     const promoCode = await PromoCode.findByIdAndUpdate(
       req.params.id,

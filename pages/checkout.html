@@ -209,6 +209,10 @@
         <button class="btn-apply" onclick="applyPromo()">Apply</button>
       </div>
 
+      <div id="promoCodeInfo" class="promo-info-box" style="display: none; margin-top: 12px; padding: 12px; border-radius: 8px; border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.08); color: #fca5a5; font-size: 13px; line-height: 1.5;">
+        <div id="promoCodeDescription"></div>
+      </div>
+
       <button class="place-btn" id="placeBtn" onclick="placeOrder()">
         <span class="btn-text">Place Order →</span>
         <div class="spinner"></div>
@@ -367,15 +371,42 @@
     const code = document.getElementById("promoInput").value.trim().toUpperCase();
     const codes = await getPromoCodes();
     const promo = codes.find(c => c.code === code);
+    const infoBox = document.getElementById("promoCodeInfo");
+    const infoDesc = document.getElementById("promoCodeDescription");
+
+    // Clear previous info
+    infoBox.style.display = "none";
+    infoDesc.innerHTML = "";
 
     if (!promo) {
       showError("Invalid promo code. Try NEODROP10, MEGADEAL, or FLASH90");
+      infoBox.style.borderColor = "#ef4444";
+      infoBox.style.background = "rgba(239, 68, 68, 0.08)";
+      infoBox.style.color = "#fca5a5";
+      infoDesc.innerHTML = "❌ <strong>Code not found:</strong> This promo code does not exist. Please check the code and try again.";
+      infoBox.style.display = "block";
       return;
     }
 
     // Check if code is active
     if (!promo.active) {
       showError("This promo code is no longer active");
+      infoBox.style.borderColor = "#ef4444";
+      infoBox.style.background = "rgba(239, 68, 68, 0.08)";
+      infoBox.style.color = "#fca5a5";
+      infoDesc.innerHTML = "❌ <strong>Code expired:</strong> This promo code is no longer active. Please try another code.";
+      infoBox.style.display = "block";
+      return;
+    }
+
+    // Check global usage limit (single-use codes)
+    if (promo.usageLimit > 0 && promo.usedCount >= promo.usageLimit) {
+      showError("This promo code has reached its usage limit");
+      infoBox.style.borderColor = "#ef4444";
+      infoBox.style.background = "rgba(239, 68, 68, 0.08)";
+      infoBox.style.color = "#fca5a5";
+      infoDesc.innerHTML = `❌ <strong>Code limit reached:</strong> This code could only be used ${promo.usageLimit} time(s) and has already been used by other customers. No more uses available.`;
+      infoBox.style.display = "block";
       return;
     }
 
@@ -383,27 +414,48 @@
     const subtotal = cart.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0);
     if (promo.minAmount > 0 && subtotal < promo.minAmount) {
       showError(`Minimum order amount ₹${promo.minAmount} required for this code`);
-      return;
-    }
-
-    // Check usage limit
-    if (promo.usageLimit > 0 && promo.usedCount >= promo.usageLimit) {
-      showError("This promo code has reached its usage limit");
+      infoBox.style.borderColor = "#ef4444";
+      infoBox.style.background = "rgba(239, 68, 68, 0.08)";
+      infoBox.style.color = "#fca5a5";
+      const shortfall = promo.minAmount - subtotal;
+      infoDesc.innerHTML = `⚠️ <strong>Minimum order not met:</strong> This code requires a minimum order of ₹${promo.minAmount}. Your current order is ₹${Math.floor(subtotal)}. Add ₹${Math.ceil(shortfall)} more to qualify.`;
+      infoBox.style.display = "block";
       return;
     }
 
     // Check one-time per account
-    const userEmail = document.getElementById("email").value;
-    if (promo.oneTimePerAccount && userEmail) {
-      // In a real app, this would check with the server
-      // For now, we'll just show a warning
+    let userEmail = document.getElementById("email").value.trim();
+    if (!userEmail) {
+      const user = JSON.parse(localStorage.getItem("user") || "null");
+      userEmail = user?.email || "";
+    }
+
+    if (promo.oneTimePerAccount) {
+      if (!userEmail) {
+        showError("Please enter your email address to use this promo code");
+        infoBox.style.borderColor = "#ef4444";
+        infoBox.style.background = "rgba(239, 68, 68, 0.08)";
+        infoBox.style.color = "#fca5a5";
+        infoDesc.innerHTML = "❌ <strong>Email required:</strong> This is a one-time-per-account code. Please enter your email address in the delivery details section.";
+        infoBox.style.display = "block";
+        return;
+      }
+      const usedPromos = JSON.parse(localStorage.getItem(`usedPromos_${userEmail}`) || '[]');
+      if (usedPromos.includes(code)) {
+        showError("You have already used this promo code on your account");
+        infoBox.style.borderColor = "#ef4444";
+        infoBox.style.background = "rgba(239, 68, 68, 0.08)";
+        infoBox.style.color = "#fca5a5";
+        infoDesc.innerHTML = `❌ <strong>Already redeemed:</strong> You have already used this promo code (${code}) on your account (${userEmail}). Each account can only use this code once.`;
+        infoBox.style.display = "block";
+        return;
+      }
     }
 
     // Calculate discount rate
     if (promo.discountType === 'percent') {
       discountRate = promo.value / 100;
     } else {
-      // Fixed amount - convert to rate based on subtotal
       discountRate = Math.min(promo.value / subtotal, 1);
     }
 
@@ -411,7 +463,21 @@
     appliedPromoData = promo;
     const discountLabel = promo.discountType === 'fixed' ? `₹${promo.value} off` : `${promo.value}% off`;
     const limitInfo = promo.usageLimit > 0 ? ` (Limited: ${promo.usageLimit - promo.usedCount} remaining)` : '';
+    
+    // Show success message with code info
     showError(`🎉 ${discountLabel} applied!${limitInfo}`, "success");
+    
+    // Show success info box
+    infoBox.style.borderColor = "#1a4d1a";
+    infoBox.style.background = "rgba(10, 46, 10, 0.3)";
+    infoBox.style.color = "#86efac";
+    let infoText = `✓ <strong>${discountLabel} discount applied!</strong><br>`;
+    if (promo.minAmount > 0) infoText += `Minimum order: ₹${promo.minAmount}<br>`;
+    if (promo.usageLimit > 0) infoText += `Uses remaining: ${promo.usageLimit - promo.usedCount}/${promo.usageLimit}<br>`;
+    if (promo.oneTimePerAccount) infoText += `This code can only be used once per account`;
+    infoDesc.innerHTML = infoText;
+    infoBox.style.display = "block";
+    
     updateTotals();
     updateDiscountLabel();
   }
@@ -468,7 +534,8 @@
       paymentMethod: selectedPayment,
       location: address + ", " + city + ", " + state + " - " + pin,
       contactNumber: phone,
-      subtotal, discount, gst, total
+      subtotal, discount, gst, total,
+      promoCode: appliedPromoCode
     };
 
     try {
@@ -503,6 +570,15 @@
         email: orderData.user.email, 
         username: orderData.user.name 
       }));
+
+      // Mark promo code as used (for one-time per account tracking)
+      if (appliedPromoCode && orderData.user.email) {
+        const usedPromos = JSON.parse(localStorage.getItem(`usedPromos_${orderData.user.email}`) || '[]');
+        if (!usedPromos.includes(appliedPromoCode)) {
+          usedPromos.push(appliedPromoCode);
+          localStorage.setItem(`usedPromos_${orderData.user.email}`, JSON.stringify(usedPromos));
+        }
+      }
 
       // Clear cart
       localStorage.removeItem("cart");
