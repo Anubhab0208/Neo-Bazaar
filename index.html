@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
   <title>Neo-Bazaar — Next-Gen Shopping</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
@@ -427,30 +430,42 @@
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
     function addToCart(id) {
-        const product = (window.products || []).find(p => p._id === id)
-                     || (window.featuredProducts || []).find(p => p._id === id);
-        if (!product) return;
-        const existing = cart.find(i => i._id === id);
-        if (existing) {
-          existing.quantity = (existing.quantity || 1) + 1;
-        } else {
-          cart.push({
-            _id: product._id,
-            name: product.name,
-            price: product.price,
-            image: product.image,
-            quantity: 1
-          });
-        }
-        localStorage.setItem("cart", JSON.stringify(cart));
-        renderCart();
+
+    // ALWAYS get fresh cart
+    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+    const product = (window.products || []).find(p => p._id === id)
+      || (window.featuredProducts || []).find(p => p._id === id);
+
+    if (!product) return;
+
+    const existing = cart.find(i => i._id === id);
+
+    if (existing) {
+      existing.quantity = (existing.quantity || 1) + 1;
+    } else {
+      cart.push({
+        _id: product._id,
+        name: product.name,
+        price: product.price,
+        image: product.image,
+        quantity: 1
+      });
     }
 
-  // 🔥 ADD THESE
+    localStorage.setItem("cart", JSON.stringify(cart));
+
+    renderCart();
+  }
+
+  // ADD THESE
   
   
 
     function renderCart() {
+      cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+
       const countEl  = document.getElementById('cartCount');
       const itemsEl  = document.getElementById('cartItems');
       const totalEl  = document.getElementById('cartTotal');
@@ -949,10 +964,35 @@
         renderCart();
       }
     });
+    window.addEventListener("storage", () => {
+        cart = JSON.parse(localStorage.getItem("cart")) || [];
+        renderCart();
+      });
+
+    window.addEventListener("pageshow", () => {
+      cart = JSON.parse(localStorage.getItem("cart")) || [];
+      renderCart();
+    });
+
+    let lastCartUpdate = localStorage.getItem("cartUpdated");
+
+    setInterval(() => {
+      const updated = localStorage.getItem("cartUpdated");
+      if (updated !== lastCartUpdate) {
+        lastCartUpdate = updated;
+        cart = JSON.parse(localStorage.getItem("cart")) || [];
+        renderCart();
+      }
+    }, 500);
+
+    window.addEventListener("unload", () => {
+      cart = JSON.parse(localStorage.getItem("cart")) || [];
+    });
+
     function goToCart() {
-    localStorage.setItem("cart", JSON.stringify(cart));
-    window.location.href = "pages/cart.html";
-  }
+      localStorage.setItem("cart", JSON.stringify(cart));
+      window.location.href = "/pages/cart.html";
+    }
   </script>
 </body>
 </html>
