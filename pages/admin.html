@@ -289,6 +289,7 @@
             <div class="border-t border-gray-600 pt-4 mt-4">
               <div class="flex items-center justify-between mb-2">
                 <label class="block text-sm font-medium text-gray-300">Categories</label>
+                <button type="button" onclick="openCategoryManager()" class="text-xs text-violet-400 hover:text-violet-300 underline">Manage Categories</button>
               </div>
               <div id="featSelectedCategories" class="flex flex-wrap gap-2 mb-3 min-h-[32px]"></div>
               <input type="hidden" id="featCategories" value="[]">
@@ -1587,12 +1588,16 @@ async function loadAdminFeatured() {
         </div>
         <p class="font-bold text-white">${escapeHtml(p.name)}</p>
         <p class="text-sm text-gray-400">${escapeHtml(p.brand || 'N/A')}</p>
+        ${p.categories?.length ? `<div class="flex flex-wrap gap-1 mt-1">${p.categories.map(c => { const cat = typeof c === 'object' ? c : {name: c}; const selectedSubs = p.selectedSubcategories || []; const catSubs = selectedSubs.filter(s => s.startsWith(cat.name + ':')); return `<span class="text-[10px] px-2 py-0.5 bg-violet-500/30 text-violet-300 rounded">${cat.name}${catSubs.length ? ': ' + catSubs.map(s => s.split(':')[1]).join(', ') : ''}</span>`; }).join('')}</div>` : '<p class="text-xs text-gray-500 mt-1">No categories</p>'}
         ${p.originalPrice ? `<p class="text-sm text-gray-500 line-through">₹${Number(p.originalPrice).toLocaleString()}</p>` : ''}
         <p class="text-violet-400 font-bold mt-1">₹${Number(p.price).toLocaleString()}</p>
         ${p.discount ? `<span class="text-xs bg-orange-500/20 text-orange-400 font-bold px-2 py-0.5 rounded">${p.discount}% OFF</span>` : ''}
         <div class="flex gap-2 mt-3">
           <button class="edit-featured-btn flex-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-2 rounded text-xs transition" data-id="${p._id}">
             ✏️ Edit
+          </button>
+          <button class="edit-feat-cat-btn flex-1 bg-violet-600 hover:bg-violet-700 text-white px-2 py-2 rounded text-xs transition" data-id="${p._id}">
+            🏷️ Categories
           </button>
           <button class="delete-featured-btn flex-1 bg-red-600 hover:bg-red-700 text-white px-2 py-2 rounded text-xs transition" data-id="${p._id}">
             🗑️ Delete
@@ -1616,6 +1621,12 @@ async function loadAdminFeatured() {
     document.querySelectorAll('.edit-featured-btn').forEach(btn => {
       btn.onclick = async () => {
         await openFeaturedProductEditModal(btn.dataset.id);
+      };
+    });
+
+    document.querySelectorAll('.edit-feat-cat-btn').forEach(btn => {
+      btn.onclick = async () => {
+        await openFeaturedCategoryEditModal(btn.dataset.id);
       };
     });
   } catch {
@@ -2171,33 +2182,105 @@ async function saveFeaturedEdit() {
   if (originalPrice) body.originalPrice = originalPrice;
   if (discount) body.discount = discount;
 
-  const endpoint = currentEditIsFeatured 
-    ? `${API_BASE}/featured-products/${currentEditProductId}`
-    : `${API_BASE}/products/${currentEditProductId}`;
-
   try {
-    const res = await fetch(endpoint, {
+    const res = await fetch(`${API_BASE}/featured-products/${currentEditFeaturedId}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(body)
     });
 
     if (res.ok) {
-      alert('Product updated successfully!');
-      closeProductEditModal();
-      if (currentEditIsFeatured) {
-        loadAdminFeatured();
-      } else {
-        loadAdminProducts();
-      }
+      msgEl.textContent = 'Updated successfully!';
+      msgEl.className   = 'text-xs text-green-400 text-center';
+      msgEl.classList.remove('hidden');
+      setTimeout(() => { closeFeaturedEditModal(); loadAdminFeatured(); }, 800);
     } else {
       const data = await res.json();
-      alert(data.error || 'Failed to update product');
+      msgEl.textContent = data.error || 'Failed to update product';
+      msgEl.className   = 'text-xs text-red-400 text-center';
+      msgEl.classList.remove('hidden');
     }
   } catch (err) {
-    console.error('Error updating product:', err);
-    alert('Error updating product');
+    console.error('Error updating featured product:', err);
+    msgEl.textContent = 'Error updating product';
+    msgEl.className   = 'text-xs text-red-400 text-center';
+    msgEl.classList.remove('hidden');
   }
+}
+
+/* =============================================
+   FEATURED CATEGORY EDITING (via existing modal)
+   ============================================= */
+let currentEditFeaturedProductId = null;
+
+async function openFeaturedCategoryEditModal(productId) {
+  const product = (window.adminFeatured || []).find(p => p._id === productId);
+  if (!product) {
+    alert('Featured product not found');
+    return;
+  }
+
+  currentEditFeaturedProductId = productId;
+  currentEditProductId = null; // clear regular product ID
+  selectedEditSubcategories = [];
+  document.getElementById('editProductName').textContent = product.name + ' (Featured)';
+
+  if (allCategories.length === 0) await loadCategories();
+
+  currentEditCategories = product.categories || [];
+  renderCurrentCategories();
+
+  if (currentEditCategories.length > 0) {
+    showEditSubcategories(currentEditCategories[0]._id || currentEditCategories[0]);
+  }
+
+  // Override save to target featured endpoint
+  document.querySelector('#categoryEditModal .flex button:last-child').onclick = saveFeaturedProductCategories;
+
+  document.getElementById('categoryEditModal').classList.remove('hidden');
+  document.getElementById('categoryEditModal').classList.add('flex');
+}
+
+async function saveFeaturedProductCategories() {
+  if (!currentEditFeaturedProductId) return;
+
+  const categoryIds = currentEditCategories.map(c => {
+    const id = typeof c === 'object' ? c._id : c;
+    return id.toString();
+  });
+
+  const subCategories = selectedEditSubcategories.map(key => {
+    const [catId, subName] = key.split(':');
+    const cat = allCategories.find(c => c._id.toString() === catId);
+    return cat ? `${cat.name}:${subName}` : key;
+  });
+
+  try {
+    const res = await fetch(`${API_BASE}/featured-products/${currentEditFeaturedProductId}/categories`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ categories: categoryIds, selectedSubcategories: subCategories })
+    });
+
+    if (res.ok) {
+      await loadAdminFeatured();
+      closeFeaturedCategoryEditModal();
+      alert('Categories updated successfully!');
+    } else {
+      const error = await res.json();
+      alert('Failed to update categories: ' + (error.error || 'Unknown error'));
+    }
+  } catch (err) {
+    console.error('Error:', err);
+    alert('Failed to update categories');
+  }
+}
+
+function closeFeaturedCategoryEditModal() {
+  // Restore original save handler
+  document.querySelector('#categoryEditModal .flex button:last-child').onclick = saveProductCategories;
+  closeCategoryEditModal();
+  currentEditFeaturedProductId = null;
 }
 
 /* INIT */
