@@ -1,4 +1,4 @@
-require("dotenv").config();
+equire("dotenv").config();
 
 const jwt = require("jsonwebtoken");
 const express = require("express");
@@ -376,54 +376,6 @@ app.post("/api/products", adminAuth, async(req,res)=>{
   }
 });
 
-// GET FLASH PRODUCTS (discount >= 50%, from both regular and featured collections)
-app.get("/api/products/flash", async (req, res) => {
-  try {
-    const [regular, featured] = await Promise.all([
-      Product.find({ discount: { $gte: 50 } }).populate('categories', 'name subcategories'),
-      FeaturedProduct.find({ discount: { $gte: 50 } })
-    ]);
-    const featuredTagged = featured.map(p => ({ ...p.toObject(), _isFeatured: true }));
-    const all = [...featuredTagged, ...regular].sort((a, b) => (b.discount || 0) - (a.discount || 0));
-    res.json(all);
-  } catch (err) {
-    res.status(500).json([]);
-  }
-});
-
-// GET NEWEST PRODUCTS (latest 8 by createdAt)
-app.get("/api/products/newest", async (req, res) => {
-  try {
-    const products = await Product.find().sort({ createdAt: -1 }).limit(8);
-    res.json(products);
-  } catch {
-    res.status(500).json([]);
-  }
-});
-
-// GET SINGLE PRODUCT BY ID (Public) - checks both Products and FeaturedProducts
-app.get("/api/products/:id", async (req, res) => {
-  try {
-    // Validate MongoDB ObjectId format
-    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
-      return res.status(400).json({ error: "Invalid product ID format" });
-    }
-    
-    // Try to find in Products collection first
-    let product = await Product.findById(req.params.id);
-    
-    // If not found, try FeaturedProducts collection
-    if (!product) {
-      product = await FeaturedProduct.findById(req.params.id);
-    }
-    
-    if (!product) return res.status(404).json({ error: "Product not found" });
-    res.json(product);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // ADMIN UPDATE PRODUCT
 app.put("/api/products/:id", adminAuth, async (req, res) => {
   try {
@@ -471,6 +423,31 @@ app.delete("/api/products/:id", adminAuth, async(req,res)=>{
     res.json({success:true});
   }catch(err){
     res.status(500).json({error:err.message});
+  }
+});
+
+// GET FLASH PRODUCTS (discount >= 50%, from both regular and featured collections)
+app.get("/api/products/flash", async (req, res) => {
+  try {
+    const [regular, featured] = await Promise.all([
+      Product.find({ discount: { $gte: 50 } }).populate('categories', 'name subcategories'),
+      FeaturedProduct.find({ discount: { $gte: 50 } })
+    ]);
+    const featuredTagged = featured.map(p => ({ ...p.toObject(), _isFeatured: true }));
+    const all = [...featuredTagged, ...regular].sort((a, b) => (b.discount || 0) - (a.discount || 0));
+    res.json(all);
+  } catch (err) {
+    res.status(500).json([]);
+  }
+});
+
+// GET NEWEST PRODUCTS (latest 8 by createdAt)
+app.get("/api/products/newest", async (req, res) => {
+  try {
+    const products = await Product.find().sort({ createdAt: -1 }).limit(8);
+    res.json(products);
+  } catch {
+    res.status(500).json([]);
   }
 });
 
