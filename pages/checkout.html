@@ -288,7 +288,16 @@
   </div>
   <div onclick="document.getElementById('couponScroll').scrollBy({left:150,behavior:'smooth'})" style="position:absolute;right:0;top:50%;transform:translateY(-50%);background:linear-gradient(to left,#1a1730 60%,transparent);padding:8px 4px 8px 16px;cursor:pointer;color:#a78bfa;font-size:18px;z-index:1;">›</div>
 </div>
+<button class="place-btn" id="placeBtn" onclick="placeOrder()">
+        <span class="btn-text">Place Order →</span>
+        <div class="spinner"></div>
+      </button>
 
+      <div class="secure-badges">
+        <span class="badge green">✓ SSL Secured</span>
+        <span class="badge blue">Free Returns</span>
+        <span class="badge green">✓ Safe Checkout</span>
+      </div>
 <script>
   // ---- CART from localStorage ----
   let cart = [];
@@ -532,55 +541,25 @@
       promoCode: appliedPromoCode
     };
 
-    try {
-      const res = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderData)
-      });
+    // Save order locally (no backend needed)
+    const orderId = "NB" + Date.now();
+    const newOrder = {
+      orderId,
+      items: cart,
+      total,
+      delivery: deliveryCharge,
+      name: orderData.user.name,
+      email: orderData.user.email,
+      paymentMethod: selectedPayment,
+      status: "Placed",
+      createdAt: new Date().toISOString()
+    };
 
-      const data = await res.json();
+    localStorage.setItem("lastOrder", JSON.stringify(newOrder));
+    localStorage.removeItem("cart");
+    localStorage.removeItem("neobazaar_cart");
 
-      if (!res.ok) throw new Error(data.error || "Order failed");
-
-      // Create order object
-      const newOrder = {
-        orderId: data._id || data.orderId,
-        items: cart,
-        total,
-        delivery: deliveryCharge,
-        name: orderData.user.name,
-        email: orderData.user.email,
-        paymentMethod: selectedPayment,
-        status: data.status || "Placed",
-        createdAt: data.createdAt || new Date().toISOString()
-      };
-      
-      // Save to lastOrder (for backward compatibility)
-      localStorage.setItem("lastOrder", JSON.stringify(newOrder));
-      
-      
-      // Mark promo code as used (for one-time per account tracking)
-      if (appliedPromoCode && orderData.user.email) {
-        const usedPromos = JSON.parse(localStorage.getItem(`usedPromos_${orderData.user.email}`) || '[]');
-        if (!usedPromos.includes(appliedPromoCode)) {
-          usedPromos.push(appliedPromoCode);
-          localStorage.setItem(`usedPromos_${orderData.user.email}`, JSON.stringify(usedPromos));
-        }
-      }
-
-      // Clear cart
-      localStorage.removeItem("cart");
-      localStorage.removeItem("neobazaar_cart");
-
-      // Redirect to success page
-      window.location.href = "order-success.html";
-
-    } catch (err) {
-      showError("❌ " + err.message);
-      btn.classList.remove("loading");
-      btn.disabled = false;
-    }
+    window.location.href = "../pages/order-success.html";
   }
 
   // Autofill email & phone from logged-in user
