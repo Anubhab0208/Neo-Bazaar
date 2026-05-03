@@ -324,46 +324,95 @@
   </section>
 
   <!-- FOOTER -->
-  <footer class="glass border-t border-white/5 pt-20 pb-10 px-6">
-    <div class="max-w-7xl mx-auto grid md:grid-cols-4 gap-12 mb-10">
-      <div class="col-span-1">
-        <div class="flex items-center gap-2 mb-6">
-          <div class="w-6 h-6 rounded bg-gradient-to-br from-violet-600 to-orange-400"></div>
-          <span class="heading text-lg font-bold grad-text">Neo-Bazaar</span>
-        </div>
-        <p class="text-gray-500 text-sm">Revolutionizing the way you browse and buy. Only at Neo-Bazaar.</p>
+<footer class="glass border-t border-white/5 pt-20 pb-10 px-6">
+  <div class="max-w-7xl mx-auto grid md:grid-cols-4 gap-12 mb-10">
+
+    <!-- LOGO -->
+    <div class="col-span-1">
+      <div class="flex items-center gap-2 mb-6">
+        <div class="w-6 h-6 rounded bg-gradient-to-br from-violet-600 to-orange-400"></div>
+        <span class="heading text-lg font-bold grad-text">Neo-Bazaar</span>
       </div>
-      <div>
-        <h4 class="font-bold mb-4">Shop</h4>
-        <ul class="text-gray-500 text-sm space-y-2">
-          <li>Electronics</li>
-          <li>Fashion</li>
-          <li>Home Decor</li>
-        </ul>
-      </div>
-      <div>
-        <h4 class="font-bold mb-4">Support</h4>
-        <ul class="text-gray-500 text-sm space-y-2">
-          <li>Help Center</li>
-          <li>Shipping Info</li>
-          <li>Returns</li>
-          <li><a href="/pages/complaints.html" class="hover:underline text-gray-500" target="_blank">
-            Complain
+      <p class="text-gray-500 text-sm">
+        Revolutionizing the way you browse and buy. Only at Neo-Bazaar.
+      </p>
+    </div>
+
+    <!-- SHOP -->
+    <div>
+      <h4 class="font-bold mb-4">Shop</h4>
+      <ul class="text-gray-500 text-sm space-y-2">
+
+        <li>
+          <a href="pages/search.html?cat=Electronics&mode=search" class="hover:text-orange-400">
+            Electronics
+          </a>
+        </li>
+
+        <li>
+          <a href="pages/search.html?cat=Fashion&mode=search" class="hover:text-orange-400">
+            Fashion
+          </a>
+        </li>
+
+        <li>
+          <a href="pages/search.html?cat=Home&mode=search" class="hover:text-orange-400">
+            Home Decor
+          </a>
+        </li>
+
+      </ul>
+    </div>
+
+    <!-- SUPPORT -->
+    <div>
+      <h4 class="font-bold mb-4">Support</h4>
+      <ul class="text-gray-500 text-sm space-y-2">
+
+        <!-- Help Center -->
+        <li>
+          <a href="#" onclick="alert('Help Center coming soon 🚀')" class="hover:text-orange-400">
+            Help Center
+          </a>
+        </li>
+
+        <!-- privacy and policy page -->
+         <li><a href="/pages/legal.html" class="hover:text-orange-400">
+            Privacy and Policy
           </a></li>
-        </ul>
-      </div>
-      <div>
-        <h4 class="font-bold mb-4">Newsletter</h4>
-        <div class="flex gap-2">
-          <input type="text" class="glass rounded-lg px-4 py-2 text-xs w-full" placeholder="email@example.com">
-          <button class="btn-primary px-4 py-2 rounded-lg text-xs">Join</button>
-        </div>
+
+        <!-- Returns -->
+        <li>
+          <a href="#" onclick="showReturnMeme()" class="hover:text-orange-400">
+            Returns
+          </a>
+        </li>
+
+        <!-- Already working -->
+        <li>
+          <a href="/pages/complaints.html" class="hover:text-orange-400" target="_blank">
+            Complain
+          </a>
+        </li>
+
+      </ul>
+    </div>
+
+    <!-- NEWSLETTER -->
+    <div>
+      <h4 class="font-bold mb-4">Newsletter</h4>
+      <div class="flex gap-2">
+        <input type="text" class="glass rounded-lg px-4 py-2 text-xs w-full" placeholder="email@example.com">
+        <button class="btn-primary px-4 py-2 rounded-lg text-xs">Join</button>
       </div>
     </div>
-    <div class="max-w-7xl mx-auto text-center text-gray-600 text-xs border-t border-white/5 pt-10">
-      &copy; 2026 Neo-Bazaar. All rights reserved.
-    </div>
-  </footer>
+
+  </div>
+
+  <div class="max-w-7xl mx-auto text-center text-gray-600 text-xs border-t border-white/5 pt-10">
+    &copy; 2026 Neo-Bazaar. All rights reserved.
+  </div>
+</footer>
 
   <!-- ═══════════════════════════════════════════
        AUTH MODAL (Login / Register)
