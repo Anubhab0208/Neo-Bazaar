@@ -2687,13 +2687,34 @@ async function loadPromoCodes() {
       headers: getAuthHeaders()
     });
     promoCodesList = await res.json();
+    localStorage.setItem("neobazaar_promos", JSON.stringify(promoCodesList));
 
     if (!promoCodesList.length) {
       container.innerHTML = '<p class="text-gray-400 col-span-full text-center py-8">No promo codes yet</p>';
       return;
     }
 
-    container.innerHTML = promoCodesList.map((p) => {
+    const permanentCodes = ["NEODROP10","SAVE5","NEOB10","NEO50","FREESHIP","WELCOME15","BIGSALE20","LUCKY25"];
+    const permanentLabels = {
+      "NEODROP10": "15% off", "SAVE5": "5% off", "NEOB10": "10% off",
+      "NEO50": "₹50 off", "FREESHIP": "Free Shipping", "WELCOME15": "15% off",
+      "BIGSALE20": "20% off", "LUCKY25": "25% off"
+    };
+
+    const permanentHTML = permanentCodes.map(code => `
+      <div class="bg-gray-700 border border-gray-600 rounded-lg p-4 hover:border-pink-500 transition">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-2xl font-bold text-pink-400">${code}</span>
+          <span class="text-xl font-bold text-green-400">${permanentLabels[code]}</span>
+        </div>
+        <p class="text-gray-300 text-sm mb-1">Permanent promo code</p>
+        <p class="text-xs text-green-400 mb-4">✓ Active</p>
+        <div class="flex gap-2">
+          <span style="font-size:11px;color:#facc15;">🔒 Permanent — cannot be modified</span>
+        </div>
+      </div>`).join('');
+
+    container.innerHTML = permanentHTML + promoCodesList.map((p) => {
       const discountLabel = p.discountType === 'fixed' ? `₹${p.value} off` : `${p.value}% off`;
       const minAmountLabel = p.minAmount > 0 ? ` (Min: ₹${p.minAmount})` : '';
       const usageLabel = p.usageLimit > 0 ? ` | Used: ${p.usedCount}/${p.usageLimit}` : '';
@@ -2769,6 +2790,7 @@ async function addPromoCode() {
       oneTimeInput.checked = false;
       descInput.value = '';
       await loadPromoCodes();
+      localStorage.setItem("neobazaar_promos", JSON.stringify(promoCodesList));
       alert('Promo code added successfully!');
     } else {
       const data = await res.json();
@@ -2791,6 +2813,7 @@ async function deletePromoCode(id) {
 
     if (res.ok) {
       await loadPromoCodes();
+      localStorage.setItem("neobazaar_promos", JSON.stringify(promoCodesList));
       alert('Promo code deleted!');
     } else {
       alert('Failed to delete promo code');

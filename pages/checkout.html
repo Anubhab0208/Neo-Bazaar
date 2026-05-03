@@ -199,7 +199,7 @@
       <div style="margin-top:16px">
         <div class="summary-row"><span>Subtotal</span><span id="subtotalDisplay">₹0</span></div>
         <div class="summary-row"><span>Delivery</span><span id="deliveryDisplay">Calculating...</span></div>
-        <div class="summary-row"><span>Discount (10%)</span><span class="red" id="discountDisplay">−₹0</span></div>
+        <div class="summary-row"><span id="discountLabel">Discount</span><span class="red" id="discountDisplay">−₹0</span></div>
         <div class="summary-row"><span>GST (18%)</span><span id="gstDisplay">₹0</span></div>
         <div class="summary-row total"><span>Total</span><span class="amt" id="totalDisplay">₹0</span></div>
       </div>
@@ -302,7 +302,7 @@
   // ---- CART from localStorage ----
   let cart = [];
   let selectedPayment = "cod";
-  let discountRate = 0.10;
+  let discountRate = 0;
   let deliveryCharge = 0;
 
     function getDeliveryCharge(pin) {
@@ -439,59 +439,77 @@
   let appliedPromoData = null;
 
   function applyPromo() {
-  const code = document.getElementById("promoInput").value.trim().toUpperCase();
+    const code = document.getElementById("promoInput").value.trim().toUpperCase();
+    if (!code) return;
 
-  // Reset all ticks
-  const allCodes = ["NEODROP10","SAVE5","NEOB10","NEO50","FREESHIP","WELCOME15","BIGSALE20","LUCKY25"];
-  const allLabels = {"NEODROP10":"15% OFF","SAVE5":"5% OFF","NEOB10":"10% OFF","NEO50":"₹50 OFF","FREESHIP":"FREE DELIVERY","WELCOME15":"15% OFF","BIGSALE20":"20% OFF","LUCKY25":"25% OFF"};
-  allCodes.forEach(c => {
-    const el = document.getElementById("tick-" + c);
-    if (el) el.textContent = allLabels[c];
-  });
+    // Reset all ticks
+    const allCodes = ["NEODROP10","SAVE5","NEOB10","NEO50","FREESHIP","WELCOME15","BIGSALE20","LUCKY25"];
+    const allLabels = {"NEODROP10":"15% OFF","SAVE5":"5% OFF","NEOB10":"10% OFF","NEO50":"₹50 OFF","FREESHIP":"FREE DELIVERY","WELCOME15":"15% OFF","BIGSALE20":"20% OFF","LUCKY25":"25% OFF"};
+    allCodes.forEach(c => {
+      const el = document.getElementById("tick-" + c);
+      if (el) el.textContent = allLabels[c];
+    });
 
-  freeShipping = false;
-  fixedDiscount = 0;
+    freeShipping = false;
+    fixedDiscount = 0;
 
-  if (code === "NEODROP10") {
-    discountRate = 0.15;
-    document.getElementById("tick-NEODROP10").textContent = "✅ Applied";
-    showError("🎉 NEODROP10 applied! 15% off!", "success");
-  } else if (code === "SAVE5") {
-    discountRate = 0.05;
-    document.getElementById("tick-SAVE5").textContent = "✅ Applied";
-    showError("SAVE5 applied! 5% off.", "success");
-  } else if (code === "NEOB10") {
-    discountRate = 0.10;
-    document.getElementById("tick-NEOB10").textContent = "✅ Applied";
-    showError("🎉 NEOB10 applied! 10% off!", "success");
-  } else if (code === "NEO50") {
-    discountRate = 0; fixedDiscount = 50;
-    document.getElementById("tick-NEO50").textContent = "✅ Applied";
-    showError("🎉 NEO50 applied! ₹50 off!", "success");
-  } else if (code === "FREESHIP") {
-    freeShipping = true;
-    document.getElementById("tick-FREESHIP").textContent = "✅ Applied";
-    showError("🎉 FREESHIP applied! Free delivery!", "success");
-  } else if (code === "WELCOME15") {
-    discountRate = 0.15;
-    document.getElementById("tick-WELCOME15").textContent = "✅ Applied";
-    showError("🎉 WELCOME15 applied! 15% off!", "success");
-  } else if (code === "BIGSALE20") {
-    discountRate = 0.20;
-    document.getElementById("tick-BIGSALE20").textContent = "✅ Applied";
-    showError("🎉 BIGSALE20 applied! 20% off!", "success");
-  } else if (code === "LUCKY25") {
-    discountRate = 0.25;
-    document.getElementById("tick-LUCKY25").textContent = "✅ Applied";
-    showError("🎉 LUCKY25 applied! 25% off!", "success");
-  } else {
-    discountRate = 0.10;
-    showError("Invalid coupon code.");
-    return;
+    // Permanent hardcoded codes
+    const hardcoded = {
+      "NEODROP10": { discountType: "percent", value: 15 },
+      "SAVE5":     { discountType: "percent", value: 5 },
+      "NEOB10":    { discountType: "percent", value: 10 },
+      "NEO50":     { discountType: "fixed",   value: 50 },
+      "FREESHIP":  { discountType: "freeship", value: 0 },
+      "WELCOME15": { discountType: "percent", value: 15 },
+      "BIGSALE20": { discountType: "percent", value: 20 },
+      "LUCKY25":   { discountType: "percent", value: 25 }
+    };
+
+    const subtotal = cart.reduce((sum, i) => sum + i.price * (i.quantity || 1), 0);
+
+    if (hardcoded[code]) {
+      const promo = hardcoded[code];
+      if (promo.discountType === "percent") {
+        discountRate = promo.value / 100;
+      } else if (promo.discountType === "fixed") {
+        discountRate = 0;
+        fixedDiscount = promo.value;
+      } else if (promo.discountType === "freeship") {
+        freeShipping = true;
+      }
+      const tickEl = document.getElementById("tick-" + code);
+      if (tickEl) tickEl.textContent = "✅ Applied";
+      appliedPromoCode = code;
+      document.getElementById("applyBtn").textContent = "✅ Applied";
+      document.getElementById("discountLabel").textContent = `Discount (${promo.discountType === "percent" ? promo.value + "%" : promo.discountType === "fixed" ? "₹" + promo.value + " off" : "Free Shipping"})`;
+      showError(`🎉 ${code} applied!`, "success");
+      updateTotals();
+      return;
+    }
+
+    // Admin added codes
+    const adminCodes = JSON.parse(localStorage.getItem("neobazaar_promos") || "[]");
+    const promo = adminCodes.find(p => p.code === code && p.active);
+
+    if (!promo) {
+      discountRate = 0;
+      showError("❌ Invalid or inactive coupon code.");
+      document.getElementById("applyBtn").textContent = "Apply";
+      return;
+    }
+
+    if (promo.minAmount > 0 && subtotal < promo.minAmount) {
+      showError(`❌ Minimum order ₹${promo.minAmount} required.`);
+      return;
+    }
+
+    discountRate = promo.discountType === "percent" ? promo.value / 100 : Math.min(promo.value / subtotal, 1);
+    appliedPromoCode = code;
+    document.getElementById("applyBtn").textContent = "✅ Applied";
+    document.getElementById("discountLabel").textContent = `Discount (${promo.discountType === "percent" ? promo.value + "%" : "₹" + promo.value + " off"})`;
+    showError(`🎉 ${code} applied! ${promo.discountType === "percent" ? promo.value + "% off" : "₹" + promo.value + " off"}`, "success");
+    updateTotals();
   }
-  document.getElementById("applyBtn").textContent = "✅ Applied";
-  updateTotals();
-}
 
   function showError(msg, type = "error") {
     const el = document.getElementById("errorMsg");
