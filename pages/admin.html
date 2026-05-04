@@ -1683,7 +1683,7 @@ async function loadOrders() {
           
           <div class="border-t border-gray-600 mt-3 pt-3 text-sm">
             <p class="text-gray-300">Subtotal: ₹${Number(o.subtotal || 0).toLocaleString()}</p>
-            ${o.discount ? `<p class="text-green-400">Discount: -₹${Number(o.discount).toLocaleString()}</p>` : ''}
+            ${o.discount ? `<p class="text-green-400">Discount: -₹${Number(o.discount).toLocaleString()}${o.promoCode ? ` <span class="ml-1 px-2 py-0.5 rounded-full bg-green-900/60 border border-green-700 text-green-300 text-xs font-mono">🏷 ${escapeHtml(o.promoCode)}</span>` : ''}</p>` : ''}
             ${o.gst ? `<p class="text-gray-300">GST: ₹${Number(o.gst).toLocaleString()}</p>` : ''}
             <p class="text-lg font-bold text-white mt-2">Total: ₹${Number(o.total || 0).toLocaleString()}</p>
             <p class="text-xs text-gray-400 mt-1">Payment: ${escapeHtml(o.paymentMethod || 'N/A')}</p>
@@ -2700,27 +2700,7 @@ async function loadPromoCodes() {
       return;
     }
 
-    const permanentCodes = ["NEODROP10","SAVE5","NEOB10","NEO50","FREESHIP","WELCOME15","BIGSALE20","LUCKY25"];
-    const permanentLabels = {
-      "NEODROP10": "15% off", "SAVE5": "5% off", "NEOB10": "10% off",
-      "NEO50": "₹50 off", "FREESHIP": "Free Shipping", "WELCOME15": "15% off",
-      "BIGSALE20": "20% off", "LUCKY25": "25% off"
-    };
-
-    const permanentHTML = permanentCodes.map(code => `
-      <div class="bg-gray-700 border border-gray-600 rounded-lg p-4 hover:border-pink-500 transition">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-2xl font-bold text-pink-400">${code}</span>
-          <span class="text-xl font-bold text-green-400">${permanentLabels[code]}</span>
-        </div>
-        <p class="text-gray-300 text-sm mb-1">Permanent promo code</p>
-        <p class="text-xs text-green-400 mb-4">✓ Active</p>
-        <div class="flex gap-2">
-          <span style="font-size:11px;color:#facc15;">🔒 Permanent — cannot be modified</span>
-        </div>
-      </div>`).join('');
-
-    container.innerHTML = permanentHTML + promoCodesList.map((p) => {
+    container.innerHTML = promoCodesList.map((p) => {
       const discountLabel = p.discountType === 'fixed' ? `₹${p.value} off` : `${p.value}% off`;
       const minAmountLabel = p.minAmount > 0 ? ` (Min: ₹${p.minAmount})` : '';
       const usageLabel = p.usageLimit > 0 ? ` | Used: ${p.usedCount}/${p.usageLimit}` : '';
