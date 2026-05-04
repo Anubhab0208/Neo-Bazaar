@@ -1669,6 +1669,12 @@ async function loadOrders() {
           </span>
         </div>
         
+        ${o.recipient ? `
+        <div class="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-violet-900/30 border border-violet-700/50">
+          <span class="text-violet-400 text-sm font-bold">🎁 Gift Order</span>
+          <span class="text-xs text-violet-300">Delivering to: <strong>${escapeHtml(o.recipient.name)}</strong> · ${escapeHtml(o.recipient.phone)} · ${escapeHtml(o.recipient.address + ', ' + o.recipient.city + ', ' + o.recipient.state + ' - ' + o.recipient.pin)}</span>
+        </div>` : ''}
+
         <div class="bg-gray-700/50 rounded p-4 mb-4">
           <p class="text-sm text-gray-300 mb-2"><strong>Items:</strong></p>
           ${o.items && o.items.length ? o.items.map(item => `
@@ -1681,8 +1687,8 @@ async function loadOrders() {
             ${o.gst ? `<p class="text-gray-300">GST: ₹${Number(o.gst).toLocaleString()}</p>` : ''}
             <p class="text-lg font-bold text-white mt-2">Total: ₹${Number(o.total || 0).toLocaleString()}</p>
             <p class="text-xs text-gray-400 mt-1">Payment: ${escapeHtml(o.paymentMethod || 'N/A')}</p>
-            ${o.location ? '<p class="text-xs text-gray-400 mt-1">Location: ' + escapeHtml(o.location) + '</p>' : ''}
-            ${o.contactNumber ? '<p class="text-xs text-gray-400 mt-1">Contact: ' + escapeHtml(o.contactNumber) + '</p>' : ''}
+            ${o.location ? '<p class="text-xs text-gray-400 mt-1">📍 ' + escapeHtml(o.location) + '</p>' : ''}
+            ${o.contactNumber ? '<p class="text-xs text-gray-400 mt-1">📞 ' + escapeHtml(o.contactNumber) + '</p>' : ''}
           </div>
         </div>
 

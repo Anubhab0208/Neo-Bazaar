@@ -157,6 +157,60 @@
       </div>
     </div>
 
+    <!-- DELIVER FOR SOMEONE ELSE -->
+    <div class="card" id="recipientCard">
+      <label style="display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none;">
+        <div style="position:relative;width:42px;height:24px;flex-shrink:0;">
+          <input type="checkbox" id="recipientToggle" onchange="toggleRecipient()" style="opacity:0;width:0;height:0;position:absolute;" />
+          <div id="toggleTrack" style="position:absolute;inset:0;background:var(--border);border-radius:99px;transition:background .2s;"></div>
+          <div id="toggleThumb" style="position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div>
+        </div>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text);">🎁 Deliver for someone else</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;">Enter recipient's name, address & contact</div>
+        </div>
+      </label>
+
+      <div id="recipientForm" style="display:none;margin-top:20px;padding-top:20px;border-top:1px solid var(--border);">
+        <div class="form-grid">
+          <div class="form-group span2">
+            <label>Recipient Name</label>
+            <input id="recipientName" placeholder="Full name of the recipient" />
+          </div>
+          <div class="form-group span2">
+            <label>Recipient Phone</label>
+            <input id="recipientPhone" placeholder="+91 XXXXX XXXXX" />
+          </div>
+          <div class="form-group span2">
+            <label>Recipient Address</label>
+            <input id="recipientAddress" placeholder="House no. / Flat / Building / Street / Area" />
+          </div>
+          <div class="form-group">
+            <label>City</label>
+            <input id="recipientCity" placeholder="City" />
+          </div>
+          <div class="form-group">
+            <label>PIN Code</label>
+            <input id="recipientPin" placeholder="PIN code" maxlength="6" />
+          </div>
+          <div class="form-group span2">
+            <label>State</label>
+            <select id="recipientState">
+              <option>West Bengal</option><option>Maharashtra</option><option>Karnataka</option>
+              <option>Tamil Nadu</option><option>Delhi</option><option>Gujarat</option>
+              <option>Rajasthan</option><option>Uttar Pradesh</option><option>Telangana</option>
+              <option>Kerala</option><option>Andhra Pradesh</option><option>Madhya Pradesh</option>
+              <option>Punjab</option><option>Haryana</option><option>Bihar</option>
+              <option>Assam</option><option>Odisha</option><option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:14px;padding:10px 14px;background:#1a0e2e;border:1px solid #3d2060;border-radius:10px;font-size:12px;color:#c4b5fd;line-height:1.6;">
+          ℹ️ The order will be placed on your account but delivered to the recipient above. Their details will be shown in the admin panel.
+        </div>
+      </div>
+    </div>
+
     <!-- PAYMENT -->
     <div class="card">
       <div class="card-title">Payment method</div>
@@ -327,6 +381,13 @@
     const gst = Math.round((subtotal - discount) * 0.18);
     const total = subtotal - discount + gst;
     return { subtotal, discount, gst, total };
+  }
+
+  function toggleRecipient() {
+    const on = document.getElementById("recipientToggle").checked;
+    document.getElementById("recipientForm").style.display = on ? "block" : "none";
+    document.getElementById("toggleTrack").style.background = on ? "var(--purple)" : "var(--border)";
+    document.getElementById("toggleThumb").style.transform = on ? "translateX(18px)" : "translateX(0)";
   }
 
   function setPayment(type, el) {
@@ -535,17 +596,40 @@
     btn.classList.add("loading");
     btn.disabled = true;
 
+    const isRecipient = document.getElementById("recipientToggle").checked;
+    let recipient = null;
+    if (isRecipient) {
+      recipient = {
+        name: document.getElementById("recipientName").value.trim(),
+        phone: document.getElementById("recipientPhone").value.trim(),
+        address: document.getElementById("recipientAddress").value.trim(),
+        city: document.getElementById("recipientCity").value.trim(),
+        pin: document.getElementById("recipientPin").value.trim(),
+        state: document.getElementById("recipientState").value,
+      };
+      if (!recipient.name || !recipient.phone || !recipient.address || !recipient.city || !recipient.pin) {
+        showError("Please fill in all recipient delivery details.");
+        return;
+      }
+    }
+
     const { subtotal, discount, gst } = getOrderTotals();
     const total = subtotal - discount + gst + deliveryCharge;
+
+    const deliveryLocation = isRecipient
+      ? `${recipient.address}, ${recipient.city}, ${recipient.state} - ${recipient.pin}`
+      : address + ", " + city + ", " + state + " - " + pin;
+    const deliveryContact = isRecipient ? recipient.phone : phone;
 
     const orderData = {
       user: { name: fname + " " + document.getElementById("lname").value.trim(), email, phone, address, city, state, pin },
       items: cart.map(i => ({ productId: i._id || i.id || "", name: i.name, price: i.price, quantity: i.quantity || 1 })),
       paymentMethod: selectedPayment,
-      location: address + ", " + city + ", " + state + " - " + pin,
-      contactNumber: phone,
+      location: deliveryLocation,
+      contactNumber: deliveryContact,
       subtotal, discount, gst, total,
-      promoCode: appliedPromoCode
+      promoCode: appliedPromoCode,
+      ...(recipient ? { recipient } : {})
     };
 
     try {
