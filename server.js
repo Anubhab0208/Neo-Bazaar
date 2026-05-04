@@ -824,6 +824,9 @@ app.post("/api/orders", async (req, res) => {
     
     const order = await Order.create(req.body);
     
+    // Note: discount is 0 by default (no automatic discount applied).
+    // Discount is only applied when a valid promo code is provided and validated above.
+    
     // Track promo code usage
     if (promoCode && order) {
       const promo = await PromoCode.findOne({ code: promoCode.toUpperCase() });

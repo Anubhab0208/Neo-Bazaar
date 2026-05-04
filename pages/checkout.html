@@ -126,8 +126,12 @@
     <div class="card">
       <div class="card-title">Delivery address</div>
       <div class="form-grid">
-        <div class="form-group"><label>First name</label><input id="fname" placeholder="First name" required /></div>
-        <div class="form-group"><label>Last name</label><input id="lname" placeholder="Last name" /></div>
+        <div class="form-group span2">
+          <label>Name</label>
+          <div style="background:#0e0c1c;border:1px solid var(--border);border-radius:9px;padding:12px 14px;font-size:14px;color:var(--text);" id="userNameDisplay">—</div>
+          <input type="hidden" id="fname" />
+          <input type="hidden" id="lname" />
+        </div>
         <div class="form-group span2">
           <label>Email</label>
           <div style="background:#0e0c1c;border:1px solid var(--border);border-radius:9px;padding:12px 14px;font-size:14px;color:var(--text);" id="userEmailDisplay">—</div>
@@ -199,17 +203,18 @@
       <div style="margin-top:16px">
         <div class="summary-row"><span>Subtotal</span><span id="subtotalDisplay">₹0</span></div>
         <div class="summary-row"><span>Delivery</span><span id="deliveryDisplay">Calculating...</span></div>
-        <div class="summary-row"><span id="discountLabel">Discount</span><span class="red" id="discountDisplay">−₹0</span></div>
+        <div class="summary-row" id="discountRow" style="display:none"><span id="discountLabel">Discount</span><span class="red" id="discountDisplay">−₹0</span></div>
         <div class="summary-row"><span>GST (18%)</span><span id="gstDisplay">₹0</span></div>
         <div class="summary-row total"><span>Total</span><span class="amt" id="totalDisplay">₹0</span></div>
       </div>
 
-      <div style="margin-top:14px;">
-        <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:10px;">🏷️ Apply Coupon Code</div>
-        <div class="promo-row">
-          <input id="promoInput" placeholder="Enter coupon code" />
-          <button class="btn-apply" id="applyBtn" onclick="applyPromo()">Apply</button>
-        </div>
+      <div class="promo-row">
+        <input id="promoInput" placeholder="Promo code" />
+        <button class="btn-apply" onclick="applyPromo()">Apply</button>
+      </div>
+
+      <div id="promoCodeInfo" class="promo-info-box" style="display: none; margin-top: 12px; padding: 12px; border-radius: 8px; border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.08); color: #fca5a5; font-size: 13px; line-height: 1.5;">
+        <div id="promoCodeDescription"></div>
       </div>
 
       <button class="place-btn" id="placeBtn" onclick="placeOrder()">
@@ -222,6 +227,10 @@
         <span class="badge blue">Free Returns</span>
         <span class="badge green">✓ Safe Checkout</span>
       </div>
+    </div>
+  </div>
+</div>
+
 <script>
   // ---- CART from localStorage ----
   let cart = [];
@@ -301,7 +310,13 @@
     }
 
     document.getElementById("subtotalDisplay").textContent = "₹" + subtotal.toLocaleString("en-IN");
-    document.getElementById("discountDisplay").textContent = "−₹" + discount.toLocaleString("en-IN");
+    const discountRow = document.getElementById("discountRow");
+    if (discount > 0) {
+      discountRow.style.display = "";
+      document.getElementById("discountDisplay").textContent = "−₹" + discount.toLocaleString("en-IN");
+    } else {
+      discountRow.style.display = "none";
+    }
     document.getElementById("gstDisplay").textContent = "₹" + gst.toLocaleString("en-IN");
     document.getElementById("totalDisplay").textContent = "₹" + total.toLocaleString("en-IN");
   }
@@ -339,38 +354,150 @@
     el.value = v;
   }
 
+  // Get discount codes from API
+  let promoCodesCache = null;
+  
+  async function getPromoCodes() {
+    if (promoCodesCache) return promoCodesCache;
+    
+    try {
+      const res = await fetch('/api/promo-codes');
+      const codes = await res.json();
+      promoCodesCache = codes;
+      return codes;
+    } catch (err) {
+      console.error('Failed to load promo codes:', err);
+      return [];
+    }
+  }
+  
+  // Load promo codes on page load
+  getPromoCodes();
+
   let appliedPromoCode = '';
+  let appliedPromoData = null;
 
-  function applyPromo() {
+  async function applyPromo() {
     const code = document.getElementById("promoInput").value.trim().toUpperCase();
-    if (!code) return;
+    const codes = await getPromoCodes();
+    const promo = codes.find(c => c.code === code);
+    const infoBox = document.getElementById("promoCodeInfo");
+    const infoDesc = document.getElementById("promoCodeDescription");
 
-    const subtotal = cart.reduce((sum, i) => sum + i.price * (i.quantity || 1), 0);
-
-    // Check admin added codes from localStorage
-    const adminCodes = JSON.parse(localStorage.getItem("neobazaar_promos") || "[]");
-    const promo = adminCodes.find(p => p.code === code && p.active);
+    // Clear previous info
+    infoBox.style.display = "none";
+    infoDesc.innerHTML = "";
 
     if (!promo) {
-      discountRate = 0;
-      showError("❌ Invalid or inactive coupon code.");
-      document.getElementById("applyBtn").textContent = "Apply";
-      appliedPromoCode = '';
-      updateTotals();
+      showError("Invalid promo code. Try NEODROP10, MEGADEAL, or FLASH90");
+      infoBox.style.borderColor = "#ef4444";
+      infoBox.style.background = "rgba(239, 68, 68, 0.08)";
+      infoBox.style.color = "#fca5a5";
+      infoDesc.innerHTML = "❌ <strong>Code not found:</strong> This promo code does not exist. Please check the code and try again.";
+      infoBox.style.display = "block";
       return;
     }
 
+    // Check if code is active
+    if (!promo.active) {
+      showError("This promo code is no longer active");
+      infoBox.style.borderColor = "#ef4444";
+      infoBox.style.background = "rgba(239, 68, 68, 0.08)";
+      infoBox.style.color = "#fca5a5";
+      infoDesc.innerHTML = "❌ <strong>Code expired:</strong> This promo code is no longer active. Please try another code.";
+      infoBox.style.display = "block";
+      return;
+    }
+
+    // Check global usage limit (single-use codes)
+    if (promo.usageLimit > 0 && promo.usedCount >= promo.usageLimit) {
+      showError("This promo code has reached its usage limit");
+      infoBox.style.borderColor = "#ef4444";
+      infoBox.style.background = "rgba(239, 68, 68, 0.08)";
+      infoBox.style.color = "#fca5a5";
+      infoDesc.innerHTML = `❌ <strong>Code limit reached:</strong> This code could only be used ${promo.usageLimit} time(s) and has already been used by other customers. No more uses available.`;
+      infoBox.style.display = "block";
+      return;
+    }
+
+    // Check minimum order amount
+    const subtotal = cart.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0);
     if (promo.minAmount > 0 && subtotal < promo.minAmount) {
-      showError(`❌ Minimum order ₹${promo.minAmount} required.`);
+      showError(`Minimum order amount ₹${promo.minAmount} required for this code`);
+      infoBox.style.borderColor = "#ef4444";
+      infoBox.style.background = "rgba(239, 68, 68, 0.08)";
+      infoBox.style.color = "#fca5a5";
+      const shortfall = promo.minAmount - subtotal;
+      infoDesc.innerHTML = `⚠️ <strong>Minimum order not met:</strong> This code requires a minimum order of ₹${promo.minAmount}. Your current order is ₹${Math.floor(subtotal)}. Add ₹${Math.ceil(shortfall)} more to qualify.`;
+      infoBox.style.display = "block";
       return;
     }
 
-    discountRate = promo.discountType === "percent" ? promo.value / 100 : Math.min(promo.value / subtotal, 1);
+    // Check one-time per account
+    let userEmail = document.getElementById("email").value.trim();
+    if (!userEmail) {
+      const user = JSON.parse(localStorage.getItem("user") || "null");
+      userEmail = user?.email || "";
+    }
+
+    if (promo.oneTimePerAccount) {
+      if (!userEmail) {
+        showError("Please enter your email address to use this promo code");
+        infoBox.style.borderColor = "#ef4444";
+        infoBox.style.background = "rgba(239, 68, 68, 0.08)";
+        infoBox.style.color = "#fca5a5";
+        infoDesc.innerHTML = "❌ <strong>Email required:</strong> This is a one-time-per-account code. Please enter your email address in the delivery details section.";
+        infoBox.style.display = "block";
+        return;
+      }
+      const usedPromos = JSON.parse(localStorage.getItem(`usedPromos_${userEmail}`) || '[]');
+      if (usedPromos.includes(code)) {
+        showError("You have already used this promo code on your account");
+        infoBox.style.borderColor = "#ef4444";
+        infoBox.style.background = "rgba(239, 68, 68, 0.08)";
+        infoBox.style.color = "#fca5a5";
+        infoDesc.innerHTML = `❌ <strong>Already redeemed:</strong> You have already used this promo code (${code}) on your account (${userEmail}). Each account can only use this code once.`;
+        infoBox.style.display = "block";
+        return;
+      }
+    }
+
+    // Calculate discount rate
+    if (promo.discountType === 'percent') {
+      discountRate = promo.value / 100;
+    } else {
+      discountRate = Math.min(promo.value / subtotal, 1);
+    }
+
     appliedPromoCode = code;
-    document.getElementById("applyBtn").textContent = "✅ Applied";
-    document.getElementById("discountLabel").textContent = `Discount (${promo.discountType === "percent" ? promo.value + "%" : "₹" + promo.value + " off"})`;
-    showError(`🎉 ${code} applied! ${promo.discountType === "percent" ? promo.value + "% off" : "₹" + promo.value + " off"}`, "success");
+    appliedPromoData = promo;
+    const discountLabel = promo.discountType === 'fixed' ? `₹${promo.value} off` : `${promo.value}% off`;
+    const limitInfo = promo.usageLimit > 0 ? ` (Limited: ${promo.usageLimit - promo.usedCount} remaining)` : '';
+    
+    // Show success message with code info
+    showError(`🎉 ${discountLabel} applied!${limitInfo}`, "success");
+    
+    // Show success info box
+    infoBox.style.borderColor = "#1a4d1a";
+    infoBox.style.background = "rgba(10, 46, 10, 0.3)";
+    infoBox.style.color = "#86efac";
+    let infoText = `✓ <strong>${discountLabel} discount applied!</strong><br>`;
+    if (promo.minAmount > 0) infoText += `Minimum order: ₹${promo.minAmount}<br>`;
+    if (promo.usageLimit > 0) infoText += `Uses remaining: ${promo.usageLimit - promo.usedCount}/${promo.usageLimit}<br>`;
+    if (promo.oneTimePerAccount) infoText += `This code can only be used once per account`;
+    infoDesc.innerHTML = infoText;
+    infoBox.style.display = "block";
+    
     updateTotals();
+    updateDiscountLabel();
+  }
+
+  function updateDiscountLabel() {
+    const label = document.getElementById('discountLabel');
+    if (label && appliedPromoData) {
+      const discountLabel = appliedPromoData.discountType === 'fixed' ? `₹${appliedPromoData.value} off` : `${appliedPromoData.value}% off`;
+      label.textContent = `Discount (${discountLabel})`;
+    }
   }
 
   function showError(msg, type = "error") {
@@ -395,7 +522,7 @@
     const pin = document.getElementById("pin").value.trim();
     const state = document.getElementById("state").value;
 
-    if (!fname || !email || !phone || !address || !city || !pin) {
+    if (!email || !phone || !address || !city || !pin) {
       showError("Please fill in all delivery details.");
       return;
     }
@@ -421,34 +548,80 @@
       promoCode: appliedPromoCode
     };
 
-    // Save order locally (no backend needed)
-    const orderId = "NB" + Date.now();
-    const newOrder = {
-      orderId,
-      items: cart,
-      total,
-      delivery: deliveryCharge,
-      name: orderData.user.name,
-      email: orderData.user.email,
-      paymentMethod: selectedPayment,
-      status: "Placed",
-      createdAt: new Date().toISOString()
-    };
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderData)
+      });
 
-    localStorage.setItem("lastOrder", JSON.stringify(newOrder));
-    localStorage.removeItem("cart");
-    localStorage.removeItem("neobazaar_cart");
+      const data = await res.json();
 
-    window.location.href = "../pages/order-success.html";
+      if (!res.ok) throw new Error(data.error || "Order failed");
+
+      // Create order object
+      const newOrder = {
+        orderId: data._id || data.orderId,
+        items: cart,
+        subtotal,
+        discount,
+        gst,
+        delivery: deliveryCharge,
+        total,
+        name: orderData.user.name,
+        email: orderData.user.email,
+        paymentMethod: selectedPayment,
+        promoCode: appliedPromoCode,
+        status: data.status || "Placed",
+        createdAt: data.createdAt || new Date().toISOString()
+      };
+      
+      // Save to lastOrder (for backward compatibility)
+      localStorage.setItem("lastOrder", JSON.stringify(newOrder));
+      
+      // Save user info for fetching orders
+      localStorage.setItem("user", JSON.stringify({ 
+        email: orderData.user.email, 
+        username: orderData.user.name 
+      }));
+
+      // Mark promo code as used (for one-time per account tracking)
+      if (appliedPromoCode && orderData.user.email) {
+        const usedPromos = JSON.parse(localStorage.getItem(`usedPromos_${orderData.user.email}`) || '[]');
+        if (!usedPromos.includes(appliedPromoCode)) {
+          usedPromos.push(appliedPromoCode);
+          localStorage.setItem(`usedPromos_${orderData.user.email}`, JSON.stringify(usedPromos));
+        }
+      }
+
+      // Clear cart
+      localStorage.removeItem("cart");
+      localStorage.removeItem("neobazaar_cart");
+
+      // Redirect to success page
+      window.location.href = "order-success.html";
+
+    } catch (err) {
+      showError("❌ " + err.message);
+      btn.classList.remove("loading");
+      btn.disabled = false;
+    }
   }
 
-  // Autofill email & phone from logged-in user
-  loadCart();
-  const _u = JSON.parse(localStorage.getItem("user") || "null");
-  if (_u) {
-    document.getElementById("userEmailDisplay").textContent = _u.email || "—";
-    document.getElementById("email").value = _u.email || "";
-  }
+  // Autofill email & name from logged-in user
+    const _u = JSON.parse(localStorage.getItem("user") || "null");
+    if (_u) {
+      document.getElementById("userEmailDisplay").textContent = _u.email || "—";
+      document.getElementById("email").value = _u.email || "";
+      const displayName = _u.username || _u.name || "—";
+      document.getElementById("userNameDisplay").textContent = displayName;
+      // Split name into fname/lname hidden fields for backward compat
+      const nameParts = displayName.split(" ");
+      document.getElementById("fname").value = nameParts[0] || displayName;
+      document.getElementById("lname").value = nameParts.slice(1).join(" ") || "";
+    }
+
+    loadCart();
 </script>
 </body>
 </html>

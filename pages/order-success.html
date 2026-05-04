@@ -217,16 +217,30 @@
         });
 
         const delivery = order.delivery || 0;
-        const subtotal = order.items.reduce((s, i) => s + i.price * (i.quantity || 1), 0);
-        const discount = Math.round(subtotal * 0.10);
-        const gst = Math.round((subtotal - discount) * 0.18);
-        const total = subtotal - discount + gst + delivery;
+        // Use saved values if present (from promo-applied checkout), else fallback calculation
+        const subtotal = order.subtotal != null
+          ? order.subtotal
+          : order.items.reduce((s, i) => s + i.price * (i.quantity || 1), 0);
+        const discount = order.discount != null
+          ? order.discount
+          : 0;
+        const gst = order.gst != null
+          ? order.gst
+          : Math.round((subtotal - discount) * 0.18);
+        const total = order.total != null
+          ? order.total
+          : subtotal - discount + gst + delivery;
+
         document.getElementById("orderTotal").textContent = "₹" + total.toLocaleString("en-IN");
+
+        const discountLine = discount > 0
+          ? `<div class="summary-row"><span>Discount${order.promoCode ? ` (${order.promoCode})` : ''}</span><span style="color:#f97316">−₹${discount.toLocaleString("en-IN")}</span></div>`
+          : '';
 
         document.getElementById("summaryBlock").innerHTML = `
           <div class="summary-row"><span>Subtotal</span><span>₹${subtotal.toLocaleString("en-IN")}</span></div>
           <div class="summary-row"><span>Delivery</span><span style="color:${delivery === 0 ? '#22c55e' : '#e2deff'}">${delivery === 0 ? 'FREE' : '₹' + delivery.toLocaleString("en-IN")}</span></div>
-          <div class="summary-row"><span>Discount (10%)</span><span style="color:#f97316">−₹${discount.toLocaleString("en-IN")}</span></div>
+          ${discountLine}
           <div class="summary-row"><span>GST (18%)</span><span>₹${gst.toLocaleString("en-IN")}</span></div>
           <div class="summary-row total"><span>Total</span><span>₹${total.toLocaleString("en-IN")}</span></div>`;
         } 
